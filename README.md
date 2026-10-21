@@ -20,7 +20,7 @@ DogsWorld/
 │   ├── dogsworld-js/       Node 20 (Express + mssql), port 8080
 │   └── dogsworld-java/     Java (Javalin), belum dibuat (Fase 7)
 ├── k8s/                    manifest Kubernetes yang dipakai bersama
-└── .archify/               diagram arsitektur dan sequence (HTML)
+└── .archify/               diagram arsitektur dan sequence (HTML dan video .webm)
 ```
 
 Setiap aplikasi punya `Dockerfile` dan `.dockerignore` sendiri. Konteks build adalah folder aplikasinya.
@@ -170,9 +170,12 @@ minikube delete   # hapus cluster, mulai dari nol
 
 ## Diagram
 
+Versi interaktif (buka file HTML langsung di browser):
 - [`dogsworld-architecture.html`](.archify/architecture-dogsworld-20261021-231326/dogsworld-architecture.html): arsitektur.
 - [`dogsworld-request-sequence.html`](.archify/sequence-dogsworld-request-20261021-231326/dogsworld-request-sequence.html): alur satu request.
 
-Dibuat dengan skill Archify. Untuk membuat ulang, lihat gotcha Node 20 di `AGENTS.md`.
+Versi video (`.webm`, hasil ekspor dari diagram di atas):
+- [DogsWorld di Kubernetes dengan Datadog SSI](.archify/dogsworld-di-kubernetes-dengan-datadog-ssi.webm): arsitektur.
+- [Satu request GET /api/dogs dan trace-nya](.archify/satu-request-get-api-dogs-dan-trace-nya.webm): alur satu request.
 
-Buka file HTML itu langsung di browser.
+Dibuat dengan skill Archify. Untuk membuat ulang, lihat gotcha Node 20 di `AGENTS.md`.
