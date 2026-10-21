@@ -35,6 +35,8 @@ spec:
                 secretKeyRef:
                   name: sqlserver-secret
                   key: sa-password
+            - name: DD_TRACE_SAMPLING_RULES
+              value: '[{"sample_rate":1}]'
           resources:
             requests:
               memory: "128Mi"

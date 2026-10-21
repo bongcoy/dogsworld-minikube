@@ -35,6 +35,8 @@ spec:
                   key: sa-password
             - name: ConnectionStrings__DogsWorldContext
               value: "Server=sqlserver,1433;Database=Dogs;User Id=sa;Password=$(SA_PASSWORD);MultipleActiveResultSets=true;"
+            - name: DD_TRACE_SAMPLING_RULES
+              value: '[{"sample_rate":1}]'
           resources:
             requests:
               memory: "256Mi"

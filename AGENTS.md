@@ -57,6 +57,7 @@ Cluster hanya punya 1 node: `minikube`, yang juga control plane.
 
 ### Gotcha yang sudah ditemukan
 - **Suntikan SSI hanya terjadi saat pod dibuat.** Setelah mengubah `targets` atau `ddTraceVersions`, jalankan `kubectl rollout restart deployment <nama> -n <namespace>`.
+- **Adaptive Sampling dari Datadog bisa membuang hampir semua trace.** Aturan dikirim lewat Remote Configuration (di log tracer bertanda `provenance: dynamic`) dan pernah menjadi 1%, sehingga Live Tail kosong. Gejalanya: `agent status` menunjukkan "Traces received" besar tetapi Writer "Traces" kecil. Deployment kini memakai `DD_TRACE_SAMPLING_RULES='[{"sample_rate":1}]'`, tetapi aturan dynamic tetap bisa menggantikannya, jadi solusi permanen adalah mematikan Adaptive Sampling di UI. Cek aturan aktif lewat `"sampling_rules"` di `/var/log/datadog/dotnet/dotnet-tracer-managed-dotnet-1.log`. Pengaturan UI ada di APM, Setup & Configuration, Ingestion Control.
 - **Pod yang dibuat saat Cluster Agent sedang diganti bisa tidak mendapat tracer yang diharapkan.** Solusinya: rollout restart.
 - **Pod yang di-inject hanya mendapat tracer untuk bahasa yang ada di `ddTraceVersions` dan cocok dengan workload.** Pod `sqlserver` dan `db-init` tidak disuntik.
 - **Aturan target dievaluasi berurutan**, target pertama yang cocok yang dipakai. Blok `DatadogInstrumentation` per workload butuh Agent/Cluster Agent 7.85+.
