@@ -25,10 +25,15 @@ secrets/
 # Log
 *.log
 
-# Archify: hasil generate yang gagal. Dua HTML manual tetap di-commit.
-.archify/architecture-*/
-.archify/sequence-*/
-.archify/.archify-finalize-*.json
+# Archify: candidate.json dan HTML hasilnya di-commit. Receipt memuat path absolut mesin ini, jadi diabaikan.
+.archify/**/*.finalize.json
+.archify/**/*.finalize-summary.json
+.archify/**/*.browser-check.json
+.archify/**/*.delivery.json
+.archify/**/.archify-finalize-*.json
+
+# Folder kerja Playwright MCP
+.playwright-mcp/
 
 # OS dan editor
 .DS_Store

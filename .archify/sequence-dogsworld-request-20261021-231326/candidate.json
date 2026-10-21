@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Satu request GET /api/dogs dan trace-nya",
+    "output": ".archify/sequence-dogsworld-request-20261021-231326/dogsworld-request-sequence.html",
+    "locale": "id",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    { "id": "browser", "type": "external", "label": "Browser", "sublabel": "localhost:8080" },
+    { "id": "svc", "type": "cloud", "label": "Service", "sublabel": "dogsworld-dotnet :80" },
+    { "id": "app", "type": "backend", "label": "dogsworld-dotnet", "sublabel": "ASP.NET + EF Core" },
+    { "id": "tracer", "type": "security", "label": "Tracer .NET", "sublabel": "disuntik SSI" },
+    { "id": "sql", "type": "database", "label": "SQL Server", "sublabel": "Dogs.dbo.Dog" },
+    { "id": "agent", "type": "backend", "label": "datadog-agent", "sublabel": "trace-agent" },
+    { "id": "datadog", "type": "external", "label": "Datadog ap1", "sublabel": "APM" }
+  ],
+  "segments": [
+    { "from": 170, "to": 410, "label": "Request" },
+    { "from": 420, "to": 480, "label": "Trace async" }
+  ],
+  "messages": [
+    { "id": "get-dogs", "from": "browser", "to": "svc", "y": 180, "label": "GET /api/dogs", "variant": "emphasis" },
+    { "id": "forward", "from": "svc", "to": "app", "y": 205, "label": "forward :8080", "variant": "default" },
+    { "id": "span-start", "from": "app", "to": "tracer", "y": 228, "label": "mulai span", "variant": "dashed", "note": "Tracer membuat span HTTP otomatis" },
+    { "id": "select", "from": "app", "to": "sql", "y": 295, "label": "SELECT Dog", "variant": "emphasis", "note": "Tracer juga menangkap span SQL otomatis" },
+    { "id": "rows", "from": "sql", "to": "app", "y": 355, "label": "daftar dog", "variant": "return" },
+    { "id": "json", "from": "app", "to": "svc", "y": 381, "label": "200 JSON", "variant": "return" },
+    { "id": "response", "from": "svc", "to": "browser", "y": 405, "label": "200 JSON", "variant": "return" },
+    { "id": "send-spans", "from": "tracer", "to": "agent", "y": 439, "label": "kirim span (UDS)", "variant": "dashed" },
+    { "id": "upload", "from": "agent", "to": "datadog", "y": 467, "label": "HTTPS", "variant": "dashed" }
+  ],
+  "activations": [
+    { "participant": "app", "from": 205, "to": 405, "type": "backend" },
+    { "participant": "sql", "from": 295, "to": 355, "type": "database" },
+    { "participant": "tracer", "from": 228, "to": 439, "type": "security" },
+    { "participant": "agent", "from": 439, "to": 467, "type": "backend" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Jalur utama",
+      "items": [
+        "Browser ke Service, lalu ke dogsworld-dotnet dan SQL Server",
+        "Response tidak menunggu pengiriman trace",
+        "Aplikasi tidak diubah untuk tracing"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Trace async",
+      "items": [
+        "Tracer mengirim span lewat socket Unix ke datadog-agent",
+        "Agent meneruskan ke ap1.datadoghq.com lewat HTTPS",
+        "Trace muncul di APM setelah beberapa menit"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Catatan",
+      "items": [
+        "Diagram ini ilustrasi alur, bukan pengukuran durasi",
+        "Alur dogsworld-js sama, dengan tracer Node"
+      ]
+    }
+  ]
+}

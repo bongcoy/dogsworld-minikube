@@ -29,7 +29,7 @@ Setiap aplikasi punya `Dockerfile` dan `.dockerignore` sendiri. Konteks build ad
 
 | Namespace | Komponen | Keterangan |
 |---|---|---|
-| `dogsworld` | `dogsworld` (.NET) | Disuntik tracer oleh SSI |
+| `dogsworld` | `dogsworld-dotnet` (.NET) | Disuntik tracer oleh SSI |
 | `dogsworld` | `dogsworld-js` (Node) | Disuntik tracer oleh SSI |
 | `dogsworld` | `sqlserver` | SQL Server 2019 Express, data disimpan di PVC. Tidak disuntik |
 | `dogsworld` | `db-init` | Job sekali jalan yang membuat database `Dogs` dan tabel `dbo.Dog` |
@@ -108,16 +108,16 @@ Ganti `<PASSWORD_BARU>` dengan password kuat pilihanmu. Password tidak ditulis d
 Image dibangun di Podman, lalu dimuat ke minikube.
 
 ```powershell
-podman build -t dogsworld:1.0 apps/dogsworld-dotnet
+podman build -t dogsworld-dotnet:1.1 apps/dogsworld-dotnet
 podman build -t dogsworld-js:1.1 apps/dogsworld-js
-minikube image load localhost/dogsworld:1.0
+minikube image load localhost/dogsworld-dotnet:1.1
 minikube image load localhost/dogsworld-js:1.1
 ```
 
 ### 5. Deploy aplikasi
 
 ```powershell
-kubectl apply -f k8s/dogsworld.yaml
+kubectl apply -f k8s/dogsworld-dotnet.yaml
 kubectl apply -f k8s/dogsworld-js.yaml
 kubectl get pods -n dogsworld
 ```
@@ -129,7 +129,7 @@ Pod aplikasi yang sehat berstatus `Running`. Kalau tracer SSI tidak muncul di po
 Jalankan di terminal terpisah. Port-forward berhenti kalau terminal ditutup atau pod dibuat ulang.
 
 ```powershell
-kubectl port-forward svc/dogsworld 8080:80 -n dogsworld
+kubectl port-forward svc/dogsworld-dotnet 8080:80 -n dogsworld
 kubectl port-forward svc/dogsworld-js 8081:80 -n dogsworld
 ```
 
@@ -170,7 +170,9 @@ minikube delete   # hapus cluster, mulai dari nol
 
 ## Diagram
 
-- [`.archify/manual-architecture-dogsworld.html`](.archify/manual-architecture-dogsworld.html): arsitektur.
-- [`.archify/manual-sequence-dogsworld-request.html`](.archify/manual-sequence-dogsworld-request.html): alur satu request.
+- [`dogsworld-architecture.html`](.archify/architecture-dogsworld-20261021-231326/dogsworld-architecture.html): arsitektur.
+- [`dogsworld-request-sequence.html`](.archify/sequence-dogsworld-request-20261021-231326/dogsworld-request-sequence.html): alur satu request.
+
+Dibuat dengan skill Archify. Untuk membuat ulang, lihat gotcha Node 20 di `AGENTS.md`.
 
 Buka file HTML itu langsung di browser.
