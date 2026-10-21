@@ -1,29 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dogsworld
+  name: dogsworld-dotnet
   namespace: dogsworld
   labels:
-    app: dogsworld
+    app: dogsworld-dotnet
     tags.datadoghq.com/env: dev
-    tags.datadoghq.com/service: dogsworld-app
-    tags.datadoghq.com/version: "1.0"
+    tags.datadoghq.com/service: dogsworld-dotnet
+    tags.datadoghq.com/version: "1.1"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: dogsworld
+      app: dogsworld-dotnet
   template:
     metadata:
       labels:
-        app: dogsworld
+        app: dogsworld-dotnet
         tags.datadoghq.com/env: dev
-        tags.datadoghq.com/service: dogsworld-app
-        tags.datadoghq.com/version: "1.0"
+        tags.datadoghq.com/service: dogsworld-dotnet
+        tags.datadoghq.com/version: "1.1"
     spec:
       containers:
-        - name: dogsworld
-          image: localhost/dogsworld:1.0
+        - name: dogsworld-dotnet
+          image: localhost/dogsworld-dotnet:1.1
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -44,11 +44,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: dogsworld
+  name: dogsworld-dotnet
   namespace: dogsworld
 spec:
   selector:
-    app: dogsworld
+    app: dogsworld-dotnet
   ports:
     - port: 80
       targetPort: 8080
