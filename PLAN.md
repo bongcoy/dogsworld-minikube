@@ -189,3 +189,4 @@ Risiko Fase 6 sampai 8: RAM Windows bebas hanya sekitar 2,8 GB (build Maven pali
 - Verifikasi: `podman build apps/dogsworld-dotnet` berhasil dan menghasilkan image yang identik (semua layer dari cache). Tag `1.0` yang dipakai cluster tidak diubah.
 - Path lama di item 3.x dan 4.x (misalnya `Dockerfile`, `DogsWorld.csproj`) menunjuk ke lokasi sebelum pemindahan. Itu catatan sejarah dan sengaja tidak diubah.
 - `AGENTS.md` dan `PLAN.md` tetap di root repo.
+- `README.md` ditambahkan di root: struktur repo, topologi, kontrak API, dan langkah menjalankan dari nol. Kalau struktur, port, atau langkah deploy berubah, perbarui README bersama `AGENTS.md`.

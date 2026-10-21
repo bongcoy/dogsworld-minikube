@@ -74,6 +74,7 @@ Cluster hanya punya 1 node: `minikube`, yang juga control plane.
 ### Struktur file
 ```
 DogsWorld/
+├── README.md                         (pengantar, struktur repo, cara menjalankan dari nol)
 ├── AGENTS.md                         (file ini)
 ├── PLAN.md                           (rencana dan checklist, sumber kebenaran progress)
 ├── apps/
