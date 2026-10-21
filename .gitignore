@@ -1,0 +1,37 @@
+# .NET build output
+bin/
+obj/
+*.user
+*.suo
+
+# Visual Studio
+.vs/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Java (untuk Fase 7)
+target/
+*.class
+
+# Secret dan konfigurasi lokal
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# Log
+*.log
+
+# Archify: hasil generate yang gagal. Dua HTML manual tetap di-commit.
+.archify/architecture-*/
+.archify/sequence-*/
+.archify/.archify-finalize-*.json
+
+# OS dan editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

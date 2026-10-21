@@ -1,0 +1,92 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "DogsWorld JS API", "version": "v1" },
+  "paths": {
+    "/api/dogs": {
+      "get": {
+        "summary": "Daftar semua dog",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Dog" } } } }
+          }
+        }
+      },
+      "post": {
+        "summary": "Buat dog baru",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DogInput" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Dibuat. Header Location berisi /api/dogs/{id}",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Dog" } } }
+          }
+        }
+      }
+    },
+    "/api/dogs/{id}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ],
+      "get": {
+        "summary": "Ambil satu dog",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Dog" } } }
+          },
+          "404": { "description": "Tidak ditemukan" }
+        }
+      },
+      "put": {
+        "summary": "Ubah dog. Id di body harus sama dengan id di URL",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Dog" } } }
+        },
+        "responses": {
+          "204": { "description": "Berhasil, tanpa isi" },
+          "400": { "description": "Id di URL tidak sama dengan id di body" },
+          "404": { "description": "Tidak ditemukan" }
+        }
+      },
+      "delete": {
+        "summary": "Hapus dog",
+        "responses": {
+          "200": {
+            "description": "Dog yang dihapus",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Dog" } } }
+          },
+          "404": { "description": "Tidak ditemukan" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Dog": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "name": { "type": "string", "nullable": true, "example": "Buddy" },
+          "breed": { "type": "string", "nullable": true, "example": "Golden Retriever" },
+          "age": { "type": "integer", "example": 3 },
+          "birthDate": { "type": "string", "format": "date-time", "example": "2023-01-15T00:00:00Z" },
+          "hasOwner": { "type": "boolean", "example": true }
+        }
+      },
+      "DogInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "nullable": true, "example": "Buddy" },
+          "breed": { "type": "string", "nullable": true, "example": "Golden Retriever" },
+          "age": { "type": "integer", "example": 3 },
+          "birthDate": { "type": "string", "format": "date-time", "example": "2023-01-15T00:00:00Z" },
+          "hasOwner": { "type": "boolean", "example": true }
+        }
+      }
+    }
+  }
+}

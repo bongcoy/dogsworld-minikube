@@ -1,0 +1,29 @@
+apiVersion: datadoghq.com/v2alpha1
+kind: DatadogAgent
+metadata:
+  name: datadog
+  namespace: datadog
+spec:
+  global:
+    clusterName: dogsworld-minikube
+    site: ap1.datadoghq.com
+    kubelet:
+      tlsVerify: false
+    tags:
+      - "env:dev"
+    credentials:
+      apiSecret:
+        secretName: datadog-secret
+        keyName: api-key
+  features:
+    apm:
+      instrumentation:
+        enabled: true
+        targets:
+          - name: dogsworld
+            namespaceSelector:
+              matchNames:
+                - dogsworld
+            ddTraceVersions:
+              dotnet: "3"
+              js: "5"

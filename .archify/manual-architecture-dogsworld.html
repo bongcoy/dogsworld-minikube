@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DogsWorld di Kubernetes dengan Datadog SSI</title>
+<style>
+  body { margin: 0; padding: 2rem; background: #020617; color: #e2e8f0; font-family: "Segoe UI", Arial, sans-serif; }
+  h1 { font-size: 1.4rem; margin: 0 0 0.25rem; color: #fff; }
+  .sub { color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .panel { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 1rem; }
+  svg { width: 100%; height: auto; display: block; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.5rem; }
+  .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 1rem; }
+  .card h3 { margin: 0 0 0.5rem; font-size: 0.95rem; color: #fff; }
+  .card ul { margin: 0; padding-left: 1.1rem; color: #cbd5e1; font-size: 0.85rem; line-height: 1.5; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+</style>
+</head>
+<body>
+<h1>DogsWorld di Kubernetes dengan Datadog SSI</h1>
+<div class="sub">Arsitektur lab minikube di Podman (WSL2). Dibuat manual dari file proyek dan hasil kubectl, belum lewat gate Archify.</div>
+
+<div class="panel">
+<svg viewBox="0 0 980 500" role="img" aria-label="Arsitektur DogsWorld di minikube dengan Datadog SSI">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#34d399"/>
+    </marker>
+    <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#fb7185"/>
+    </marker>
+  </defs>
+
+  <!-- Boundary minikube -->
+  <rect x="200" y="20" width="540" height="460" rx="10" fill="none" stroke="#334155" stroke-dasharray="6 4"/>
+  <text x="215" y="40" fill="#94a3b8" font-size="12">minikube di Podman (WSL2)</text>
+
+  <!-- Boundary namespace dogsworld -->
+  <rect x="215" y="140" width="510" height="130" rx="8" fill="none" stroke="#fbbf24" stroke-dasharray="4 4"/>
+  <text x="228" y="158" fill="#fbbf24" font-size="12">namespace dogsworld</text>
+
+  <!-- Komponen -->
+  <rect x="30" y="200" width="130" height="56" rx="8" fill="#1e293b" stroke="#94a3b8"/>
+  <text x="95" y="225" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">Browser</text>
+  <text x="95" y="243" text-anchor="middle" fill="#94a3b8" font-size="11">localhost:8080</text>
+
+  <rect x="225" y="60" width="160" height="56" rx="8" fill="#064e3b" stroke="#34d399"/>
+  <text x="305" y="85" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">Datadog Operator</text>
+  <text x="305" y="103" text-anchor="middle" fill="#94a3b8" font-size="11">ns datadog</text>
+
+  <rect x="500" y="60" width="200" height="56" rx="8" fill="#4c0519" stroke="#fb7185"/>
+  <text x="600" y="85" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">Cluster Agent</text>
+  <text x="600" y="103" text-anchor="middle" fill="#94a3b8" font-size="11">Admission Controller SSI</text>
+
+  <rect x="235" y="200" width="130" height="56" rx="8" fill="#431407" stroke="#fbbf24"/>
+  <text x="300" y="225" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">Service</text>
+  <text x="300" y="243" text-anchor="middle" fill="#94a3b8" font-size="11">dogsworld :80</text>
+
+  <rect x="400" y="200" width="150" height="56" rx="8" fill="#064e3b" stroke="#34d399"/>
+  <text x="475" y="225" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">DogsWorld</text>
+  <text x="475" y="243" text-anchor="middle" fill="#94a3b8" font-size="11">.NET Core 3.1 :8080</text>
+
+  <rect x="585" y="200" width="130" height="56" rx="8" fill="#2e1065" stroke="#a78bfa"/>
+  <text x="650" y="225" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">SQL Server</text>
+  <text x="650" y="243" text-anchor="middle" fill="#94a3b8" font-size="11">2019 Express :1433</text>
+
+  <rect x="400" y="400" width="180" height="56" rx="8" fill="#064e3b" stroke="#34d399"/>
+  <text x="490" y="425" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">datadog-agent</text>
+  <text x="490" y="443" text-anchor="middle" fill="#94a3b8" font-size="11">DaemonSet, ns datadog</text>
+
+  <rect x="790" y="400" width="170" height="56" rx="8" fill="#1e293b" stroke="#94a3b8"/>
+  <text x="875" y="425" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">Datadog ap1</text>
+  <text x="875" y="443" text-anchor="middle" fill="#94a3b8" font-size="11">APM + Infrastructure</text>
+
+  <!-- Panah -->
+  <line x1="160" y1="228" x2="233" y2="228" stroke="#34d399" stroke-width="2" marker-end="url(#arrG)"/>
+  <text x="196" y="220" text-anchor="middle" fill="#94a3b8" font-size="11">port-forward</text>
+
+  <line x1="365" y1="228" x2="398" y2="228" stroke="#34d399" stroke-width="2" marker-end="url(#arrG)"/>
+  <text x="381" y="220" text-anchor="middle" fill="#94a3b8" font-size="10">forward</text>
+
+  <line x1="550" y1="228" x2="583" y2="228" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="566" y="220" text-anchor="middle" fill="#94a3b8" font-size="10">SQL</text>
+
+  <line x1="385" y1="88" x2="498" y2="88" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="441" y="80" text-anchor="middle" fill="#94a3b8" font-size="10">manages</text>
+
+  <line x1="570" y1="116" x2="455" y2="198" stroke="#fb7185" stroke-width="2" marker-end="url(#arrR)"/>
+  <text x="535" y="150" text-anchor="middle" fill="#fb7185" font-size="10">inject SSI</text>
+
+  <line x1="475" y1="256" x2="475" y2="398" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+  <text x="485" y="330" fill="#94a3b8" font-size="10">traces UDS</text>
+
+  <line x1="580" y1="428" x2="788" y2="428" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="684" y="418" text-anchor="middle" fill="#94a3b8" font-size="10">HTTPS traces + metrics</text>
+</svg>
+</div>
+
+<div class="cards">
+  <div class="card"><h3><span class="dot" style="background:#22d3ee"></span>Alur request</h3>
+    <ul>
+      <li>Browser lewat port-forward ke Service</li>
+      <li>Service meneruskan ke pod DogsWorld</li>
+      <li>DogsWorld membaca data dari SQL Server</li>
+    </ul>
+  </div>
+  <div class="card"><h3><span class="dot" style="background:#34d399"></span>Instrumentasi SSI</h3>
+    <ul>
+      <li>Operator membuat Agent dari DatadogAgent</li>
+      <li>Cluster Agent menyuntikkan tracer .NET saat pod dibuat</li>
+      <li>Tidak ada tracer di Dockerfile atau kode</li>
+    </ul>
+  </div>
+  <div class="card"><h3><span class="dot" style="background:#fb7185"></span>Rahasia dan data</h3>
+    <ul>
+      <li>API key di Secret datadog-secret, dibuat manual</li>
+      <li>Password SA di Secret sqlserver-secret</li>
+      <li>Data di PVC 2Gi, database Dogs dibuat Job db-init</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dogsworld
+  namespace: dogsworld
+  labels:
+    app: dogsworld
+    tags.datadoghq.com/env: dev
+    tags.datadoghq.com/service: dogsworld-app
+    tags.datadoghq.com/version: "1.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dogsworld
+  template:
+    metadata:
+      labels:
+        app: dogsworld
+        tags.datadoghq.com/env: dev
+        tags.datadoghq.com/service: dogsworld-app
+        tags.datadoghq.com/version: "1.0"
+    spec:
+      containers:
+        - name: dogsworld
+          image: localhost/dogsworld:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sqlserver-secret
+                  key: sa-password
+            - name: ConnectionStrings__DogsWorldContext
+              value: "Server=sqlserver,1433;Database=Dogs;User Id=sa;Password=$(SA_PASSWORD);MultipleActiveResultSets=true;"
+          resources:
+            requests:
+              memory: "256Mi"
+            limits:
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dogsworld
+  namespace: dogsworld
+spec:
+  selector:
+    app: dogsworld
+  ports:
+    - port: 80
+      targetPort: 8080
