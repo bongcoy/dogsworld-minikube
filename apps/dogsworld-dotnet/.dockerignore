@@ -1,9 +1,6 @@
 bin/
 obj/
 .vs/
-k8s/
-apps/
-.archify/
 *.md
 *.user
 .git/
