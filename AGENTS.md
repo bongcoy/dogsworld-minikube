@@ -7,7 +7,7 @@ Panduan untuk agent yang bekerja di repo ini. Baca file ini dulu, lalu baca `PLA
 **Tujuan pengguna:** belajar Podman, Kubernetes, Helm, dan Datadog lewat praktik. Pengguna pemula, jadi setiap langkah dan istilah perlu dijelaskan.
 
 **Yang sudah dibangun:**
-- Aplikasi **DogsWorld** (.NET Core 3.1, ASP.NET + EF Core + SQL Server) di folder root repo. Berjalan di cluster minikube dan di-instrument Datadog APM dengan **Single Step Instrumentation (SSI)** lewat **Datadog Operator**.
+- Aplikasi **DogsWorld** (.NET Core 3.1, ASP.NET + EF Core + SQL Server) di `apps/dogsworld-dotnet/`. Berjalan di cluster minikube dan di-instrument Datadog APM dengan **Single Step Instrumentation (SSI)** lewat **Datadog Operator**.
 - Aplikasi **dogsworld-js** (Express + `mssql`) di `apps/dogsworld-js/`. CRUD-nya sama dengan .NET dan memakai database yang sama. Sudah ter-instrument SSI.
 - Rencana untuk aplikasi **dogsworld-java** (Javalin + `mssql-jdbc`) di namespace `dogsworld-java-test`. Belum dibuat (Fase 7).
 - Diagram arsitektur dan sequence dibuat manual sebagai HTML di `.archify/`.
@@ -52,7 +52,8 @@ Cluster hanya punya 1 node: `minikube`, yang juga control plane.
 - **Secret tidak boleh ditampilkan isinya.** Untuk membuat salinan Secret, gunakan cara yang tidak menampilkan nilainya.
 - Perubahan progress checklist atau plan project **wajib dicatat di `PLAN.md`** (lihat bagian 3).
 - Jangan menambah tracer manual ke Dockerfile. Tracer disuntik lewat SSI. Dockerfile .NET punya komentar yang melarang `CORECLR_*`.
-- `.dockerignore` harus mengecualikan `k8s/`, `apps/`, dan `.archify/` agar build .NET tidak ikut membawa folder ini.
+- Repo ini monorepo: setiap aplikasi ada di `apps/<nama>/` dengan Dockerfile dan `.dockerignore` sendiri. Konteks build adalah folder aplikasi itu, bukan root, jadi `.dockerignore` tidak perlu mengecualikan `k8s/`, `apps/`, atau `.archify/`.
+- `AGENTS.md` dan `PLAN.md` tetap di root repo.
 
 ### Gotcha yang sudah ditemukan
 - **Suntikan SSI hanya terjadi saat pod dibuat.** Setelah mengubah `targets` atau `ddTraceVersions`, jalankan `kubectl rollout restart deployment <nama> -n <namespace>`.
@@ -75,13 +76,15 @@ Cluster hanya punya 1 node: `minikube`, yang juga control plane.
 DogsWorld/
 ├── AGENTS.md                         (file ini)
 ├── PLAN.md                           (rencana dan checklist, sumber kebenaran progress)
-├── Dockerfile                        (DogsWorld .NET, tanpa tracer manual)
-├── .dockerignore                     (mengecualikan bin, obj, k8s, apps, .archify, dll)
-├── Controllers/DogsController.cs     (kontrak API acuan)
-├── Models/Dog.cs, Data/DogsWorldContext.cs
-├── Startup.cs                        (Swagger aktif di luar IsDevelopment)
-├── appsettings.json                  (connection string untuk jalan lokal)
 ├── apps/
+│   ├── dogsworld-dotnet/             (DogsWorld .NET, dulu di root repo)
+│   │   ├── DogsWorld.sln, DogsWorld.csproj
+│   │   ├── Dockerfile                (tanpa tracer manual)
+│   │   ├── .dockerignore             (bin, obj, .vs, *.md, *.user, .git)
+│   │   ├── Controllers/DogsController.cs  (kontrak API acuan)
+│   │   ├── Models/Dog.cs, Data/DogsWorldContext.cs
+│   │   ├── Startup.cs                (Swagger aktif di luar IsDevelopment)
+│   │   └── appsettings.json          (connection string untuk jalan lokal)
 │   └── dogsworld-js/
 │       ├── package.json              (express, mssql, swagger-ui-express)
 │       ├── src/server.js             (CRUD /api/dogs, Swagger di /swagger)
@@ -100,6 +103,7 @@ DogsWorld/
 ```
 
 ### Konvensi
+- **Nama folder aplikasi:** `apps/dogsworld-<bahasa>` (`dogsworld-dotnet`, `dogsworld-js`, `dogsworld-java`). Nama image dan service Datadog tidak harus sama dengan nama folder (image .NET tetap `dogsworld`).
 - **Nama image lokal:** `localhost/<nama>:<versi>`, lalu `minikube image load`.
 - **Label UST di setiap Deployment:** `tags.datadoghq.com/env`, `tags.datadoghq.com/service`, `tags.datadoghq.com/version`. `service` harus sama dengan nama aplikasi.
 - **Koneksi database:** host `sqlserver` untuk namespace `dogsworld`. Password dari Secret `sqlserver-secret` (key `sa-password`), tidak pernah ditulis di YAML.
@@ -117,7 +121,8 @@ kubectl port-forward svc/dogsworld 8080:80 -n dogsworld
 kubectl port-forward svc/dogsworld-js 8081:80 -n dogsworld
 kubectl exec <pod-agent> -n datadog -c agent -- agent status
 kubectl rollout restart deployment <nama> -n <namespace>
-podman build -t <nama>:1.0 <folder>
+podman build -t <nama>:1.0 apps/<nama-folder>
+# contoh: podman build -t dogsworld:1.1 apps/dogsworld-dotnet
 minikube image load localhost/<nama>:1.0
 ```
 

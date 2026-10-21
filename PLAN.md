@@ -148,6 +148,7 @@ Risiko Fase 6 sampai 8: RAM Windows bebas hanya sekitar 2,8 GB (build Maven pali
 - Mungkin membuat atau mengubah `%USERPROFILE%\.wslconfig`.
 - Mengubah `Dockerfile`, `appsettings.json`, dan mungkin `DogsWorld.csproj`.
 - Membuat folder `k8s/` berisi manifest.
+- Memindahkan aplikasi .NET dari root ke `apps/dogsworld-dotnet/` (`git mv`, termasuk `.sln`, `.csproj`, `Dockerfile`, `.dockerignore`, dan folder kode).
 - Membuat cluster minikube sebagai container Podman.
 
 ## 9. Catatan keamanan
@@ -184,3 +185,7 @@ Risiko Fase 6 sampai 8: RAM Windows bebas hanya sekitar 2,8 GB (build Maven pali
 - Temuan: pod `sqlserver` dan `db-init` tetap tidak disuntik meski namespace-nya sama.
 - Swagger ditambahkan ke app JS (item 6.9). `/swagger/index.html` dan `/swagger/` keduanya 200, API tetap normal, pod baru tetap disuntik SSI (`datadog-lib-js-init`). Image dinaikkan ke tag `1.1` supaya `minikube image load` pasti memuat versi baru.
 - Plan Swagger untuk app Java ditambahkan sebagai item 7.10.
+- Restrukturisasi monorepo: aplikasi .NET dipindah ke `apps/dogsworld-dotnet/` dengan `git mv` (riwayat file terjaga). `bin/`, `obj/`, dan `.vs/` dihapus karena hasil build. `.dockerignore` dirapikan karena konteks build kini folder aplikasi, jadi tidak perlu lagi mengecualikan `k8s/`, `apps/`, `.archify/`.
+- Verifikasi: `podman build apps/dogsworld-dotnet` berhasil dan menghasilkan image yang identik (semua layer dari cache). Tag `1.0` yang dipakai cluster tidak diubah.
+- Path lama di item 3.x dan 4.x (misalnya `Dockerfile`, `DogsWorld.csproj`) menunjuk ke lokasi sebelum pemindahan. Itu catatan sejarah dan sengaja tidak diubah.
+- `AGENTS.md` dan `PLAN.md` tetap di root repo.
