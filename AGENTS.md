@@ -53,7 +53,8 @@ Cluster hanya punya 1 node: `minikube`, yang juga control plane.
 - Perubahan progress checklist atau plan project **wajib dicatat di `PLAN.md`** (lihat bagian 3).
 - Jangan menambah tracer manual ke Dockerfile. Tracer disuntik lewat SSI. Dockerfile .NET punya komentar yang melarang `CORECLR_*`.
 - Repo ini monorepo: setiap aplikasi ada di `apps/<nama>/` dengan Dockerfile dan `.dockerignore` sendiri. Konteks build adalah folder aplikasi itu, bukan root, jadi `.dockerignore` tidak perlu mengecualikan `k8s/`, `apps/`, atau `.archify/`.
-- `AGENTS.md` dan `PLAN.md` tetap di root repo.
+- `AGENTS.md`, `PLAN.md`, dan `TAGS.md` tetap di root repo.
+- **Setiap pembuatan atau perubahan entity yang berkaitan dengan Datadog wajib diberi tag sesuai `TAGS.md`** sebelum dianggap selesai. Entity itu mencakup Deployment, Job, dan Pod; `DatadogAgent`; monitor, dashboard, dan SLO; metrik kustom; serta konfigurasi tracer. Baca `TAGS.md` sebelum membuat entity seperti itu.
 
 ### Gotcha yang sudah ditemukan
 - **Suntikan SSI hanya terjadi saat pod dibuat.** Setelah mengubah `targets` atau `ddTraceVersions`, jalankan `kubectl rollout restart deployment <nama> -n <namespace>`.
@@ -78,6 +79,7 @@ DogsWorld/
 ├── README.md                         (pengantar, struktur repo, cara menjalankan dari nol)
 ├── AGENTS.md                         (file ini)
 ├── PLAN.md                           (rencana dan checklist, sumber kebenaran progress)
+├── TAGS.md                           (konvensi tag Datadog, wajib diikuti untuk entity Datadog)
 ├── apps/
 │   ├── dogsworld-dotnet/             (DogsWorld .NET, dulu di root repo)
 │   │   ├── DogsWorld.sln, DogsWorld.csproj
@@ -106,11 +108,11 @@ DogsWorld/
 ### Konvensi
 - **Satu nama per aplikasi:** `dogsworld-<bahasa>` (`dogsworld-dotnet`, `dogsworld-js`, `dogsworld-java`) dipakai untuk folder `apps/`, image, Deployment, Service, container, label `app`, file manifest `k8s/`, dan service Datadog (`tags.datadoghq.com/service`). Nama service Datadog .NET dulu `dogsworld-app`.
 - **Nama image lokal:** `localhost/<nama>:<versi>`, lalu `minikube image load`.
-- **Label UST di setiap Deployment:** `tags.datadoghq.com/env`, `tags.datadoghq.com/service`, `tags.datadoghq.com/version`. `service` harus sama dengan nama aplikasi.
-- **Koneksi database:** host `sqlserver` untuk namespace `dogsworld`. Password dari Secret `sqlserver-secret` (key `sa-password`), tidak pernah ditulis di YAML.
+- **Label UST di setiap Deployment:** `tags.datadoghq.com/env`, `tags.datadoghq.com/service`, `tags.datadoghq.com/version`, di metadata dan pod template. `service` harus sama dengan nama aplikasi. Aturan lengkap, termasuk `team`, ada di `TAGS.md`.
+- **Koneksi database:** host `postgres` untuk namespace `dogsworld`, port 5432, database `dogs`, user `dogsworld`. Password dari Secret `postgres-secret` (key `password`), tidak pernah ditulis di YAML.
 - **Port lokal untuk port-forward:** 8080 (.NET), 8081 (JS), 8082 (Java, rencana).
 - **Swagger:** setiap aplikasi menyediakan UI di `/swagger/index.html` (.NET di 8080, JS di 8081, Java direncanakan, item 7.10 di `PLAN.md`). Di JS, `src/openapi.json` ditulis manual.
-- **Tag image:** naikkan tag (misalnya `1.0` menjadi `1.1`) setiap build ulang, lalu perbarui `image` dan label `tags.datadoghq.com/version` di manifest. Image dengan tag yang sama bisa tidak tertimpa di minikube. Image JS saat ini `1.1`.
+- **Tag image:** naikkan tag (misalnya `1.0` menjadi `1.1`) setiap build ulang, lalu perbarui `image` dan label `tags.datadoghq.com/version` di manifest. Image dengan tag yang sama bisa tidak tertimpa di minikube. Image JS dan .NET saat ini `1.2`.
 - **Kontrak API** (sama untuk semua aplikasi): `GET /api/dogs`, `GET /api/dogs/{id}`, `POST /api/dogs` (201 + `Location`), `PUT /api/dogs/{id}` (204, 400 jika id tidak cocok, 404 jika tidak ada), `DELETE /api/dogs/{id}` (200 berisi dog yang dihapus, atau 404). JSON camelCase.
 
 ### Perintah yang sering dipakai

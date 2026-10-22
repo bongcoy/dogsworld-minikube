@@ -5,6 +5,7 @@ Proyek belajar **Podman, Kubernetes, Helm, dan Datadog** lewat praktik. Beberapa
 Dokumen lain:
 - [`PLAN.md`](PLAN.md): rencana, checklist, dan catatan progres (sumber kebenaran).
 - [`AGENTS.md`](AGENTS.md): panduan untuk agent AI, berisi gotcha dan konvensi.
+- [`TAGS.md`](TAGS.md): konvensi tag Datadog untuk setiap Deployment, Job, dan entity Datadog lain.
 
 ## Struktur repo
 
@@ -15,6 +16,7 @@ DogsWorld/
 ├── README.md
 ├── AGENTS.md
 ├── PLAN.md
+├── TAGS.md
 ├── apps/
 │   ├── dogsworld-dotnet/   .NET Core 3.1 (ASP.NET + EF Core), port 8080
 │   ├── dogsworld-js/       Node 20 (Express + pg), port 8080

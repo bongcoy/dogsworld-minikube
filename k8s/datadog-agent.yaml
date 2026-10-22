@@ -11,6 +11,7 @@ spec:
       tlsVerify: false
     tags:
       - "env:dev"
+      - "team:bongcoy"
     credentials:
       apiSecret:
         secretName: datadog-secret

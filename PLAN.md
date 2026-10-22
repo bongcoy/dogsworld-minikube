@@ -158,10 +158,17 @@ Alasan: SQL Server 2019 dan `mssql-tools` hanya punya image amd64, jadi tidak ja
 - [x] 9.11 Perbarui `AGENTS.md`, `README.md`, dan diagram Archify (Node 20). Diagram diubah ke PostgreSQL, di-finalize (gate lolos), SVG diekspor ulang
 
 ### Fase 10: Datadog Database Monitoring (DBM) untuk Postgres
-- [ ] 10.1 `pg_stat_statements` aktif, user `datadog`, schema `datadog`, fungsi `explain_statement`
-- [ ] 10.2 Password user `datadog` di Secret, dibaca Agent lewat `ENC[k8s_secret@...]`
-- [ ] 10.3 Konfigurasi check postgres dengan `dbm: true`
-- [ ] 10.4 `DD_DBM_PROPAGATION_MODE` untuk .NET dan JS (cek dukungannya di dokumentasi dulu)
+Catatan implementasi (22 Okt):
+- Postgres: `args` di `k8s/postgres.yaml` mengaktifkan `shared_preload_libraries=pg_stat_statements` dan `track_activity_query_size=4096` (diverifikasi dengan `SHOW`).
+- Setup user `datadog` dijalankan lewat `kubectl exec` dengan password yang dibaca dari Secret di dalam pod. Dibuat di database `postgres` dan `dogs`.
+- Koreksi: format referensi secret untuk backend `k8s.secrets` adalah `ENC[namespace/secret-name;key]`, bukan `ENC[k8s_secret@...]`.
+- Agent butuh izin baca Secret lintas namespace. Ditulis di `k8s/datadog-dbm-rbac.yaml` (Role + RoleBinding di `dogsworld`).
+- Hasil `agent status`: check `postgres` OK, dengan Database Monitoring Query Metrics, Query Samples, Activity Samples, dan Metadata Samples bernilai > 0.
+- Peringatan yang terlihat: "APM traces invalid status code 404" di endpoint health `trace.agent`. Belum diselidiki, perlu dicek jika trace tidak masuk.
+- [x] 10.1 `pg_stat_statements` aktif, user `datadog`, schema `datadog`, fungsi `explain_statement`
+- [x] 10.2 Password user `datadog` di Secret `datadog-pg-secret` (key `password`, dibuat acak lewat kubectl, nilainya tidak ditampilkan), dibaca Agent lewat `ENC[dogsworld/datadog-pg-secret;password]`
+- [x] 10.3 Konfigurasi check postgres dengan `dbm: true` (di `DatadogAgent` lewat `override.nodeAgent.extraConfd`)
+- [x] 10.4 `DD_DBM_PROPAGATION_MODE=full` untuk .NET dan JS (didukung: dd-trace-dotnet 2.35.0+ dan dd-trace-js 3.17.0+, tracer saat ini .NET 3.56.0.0 dan JS 5.132.0)
 - [ ] 10.5 Verifikasi di `agent status` dan pengguna mengonfirmasi di UI
 
 ### Fase 11: Paket untuk tim dan registry GHCR
