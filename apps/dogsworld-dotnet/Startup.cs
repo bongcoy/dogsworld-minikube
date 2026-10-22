@@ -24,7 +24,7 @@ namespace DogsWorld
             services.AddControllers();
 
             services.AddDbContext<DogsWorldContext>(options =>
-                    options.UseSqlServer(Configuration.GetConnectionString("DogsWorldContext")));
+                    options.UseNpgsql(Configuration.GetConnectionString("DogsWorldContext")));
 
             services.AddSwaggerGen(c =>
             {

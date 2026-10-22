@@ -1,5 +1,6 @@
 # Stage 1: Build aplikasi (.NET Core 3.1 SDK)
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build
+# Berjalan di arsitektur mesin pembuat (tanpa emulasi). Hasil publish adalah IL yang netral arsitektur.
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build
 WORKDIR /src
 
 # Restore & Publish aplikasi .NET

@@ -5356,17 +5356,17 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="fine" x="525" y="466" class="t-backend" font-size="7" text-anchor="middle">ns dogsworld</text>
         </g>
 
-        <g id="node-sql" data-node-id="sql" data-node-label="SQL Server" tabindex="0" role="button" aria-label="Focus SQL Server, 2019 Express :1433, minikube di Podman (WSL2)" aria-pressed="false" data-node-kind="database" data-node-sublabel="2019 Express :1433" data-node-tag="svc sqlserver" data-node-context="minikube di Podman (WSL2)">
-          <title>SQL Server · 2019 Express :1433 · minikube di Podman (WSL2) · svc sqlserver</title>
+        <g id="node-sql" data-node-id="sql" data-node-label="PostgreSQL" tabindex="0" role="button" aria-label="Focus PostgreSQL, 16 :5432, minikube di Podman (WSL2)" aria-pressed="false" data-node-kind="database" data-node-sublabel="16 :5432" data-node-tag="svc postgres" data-node-context="minikube di Podman (WSL2)">
+          <title>PostgreSQL · 16 :5432 · minikube di Podman (WSL2) · svc postgres</title>
           <rect x="680" y="280" width="140" height="64" rx="8" class="c-mask"/>
           <rect x="680" y="280" width="140" height="64" rx="8" class="c-database" data-animate="node" style="--step:5" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(686 286) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="750" y="310" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">SQL Server</text>
-        <text data-detail="context" x="750" y="326" class="t-muted" font-size="9" text-anchor="middle">2019 Express :1433</text>
-        <text data-detail="fine" x="750" y="336" class="t-database" font-size="7" text-anchor="middle">svc sqlserver</text>
+          <text data-node-label="" data-detail-anchor="" x="750" y="310" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">PostgreSQL</text>
+        <text data-detail="context" x="750" y="326" class="t-muted" font-size="9" text-anchor="middle">16 :5432</text>
+        <text data-detail="fine" x="750" y="336" class="t-database" font-size="7" text-anchor="middle">svc postgres</text>
         </g>
 
         <g id="node-operator" data-node-id="operator" data-node-label="Datadog Operator" tabindex="0" role="button" aria-label="Focus Datadog Operator, Helm chart, minikube di Podman (WSL2)" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Helm chart" data-node-tag="ns datadog" data-node-context="minikube di Podman (WSL2)">
@@ -5683,7 +5683,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <ul>
           <li>Browser masuk lewat port-forward ke Service</li>
           <li>Service meneruskan ke pod aplikasi di port 8080</li>
-          <li>Kedua aplikasi membaca database Dogs yang sama di SQL Server</li>
+          <li>Kedua aplikasi membaca database dogs yang sama di PostgreSQL</li>
         </ul>
       </div>
 
@@ -5707,9 +5707,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </div>
         <ul>
           <li>API key di Secret datadog-secret, dibuat manual</li>
-          <li>Password SA di Secret sqlserver-secret</li>
-          <li>Data SQL Server di PVC, database Dogs dibuat Job db-init</li>
-          <li>SQL Server dan db-init tidak disuntik tracer</li>
+          <li>Password database di Secret postgres-secret, dibuat manual</li>
+          <li>Data PostgreSQL di PVC, tabel dibuat ConfigMap postgres-init</li>
+          <li>PostgreSQL tidak disuntik tracer</li>
         </ul>
       </div>
     </div>

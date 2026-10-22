@@ -142,6 +142,48 @@ JSON: `id`, `name`, `breed`, `age`, `birthDate`, `hasOwner`. Tabel: `Dogs.dbo.Do
 
 Risiko Fase 6 sampai 8: RAM Windows bebas hanya sekitar 2,8 GB (build Maven paling berat). DELETE dari satu app menghapus data untuk semua app, itu disengaja.
 
+### Fase 9: Migrasi database ke PostgreSQL (dikerjakan sebelum Fase 7)
+Alasan: SQL Server 2019 dan `mssql-tools` hanya punya image amd64, jadi tidak jalan di Apple Silicon. `postgres:16`, base image .NET 3.1, dan `node:20-slim` sudah multi-arch. Keputusan: data lama (9 baris) dipindahkan sebagai seed, tabel dibuat lewat ConfigMap `initdb`, versi .NET tetap 3.1.
+
+- [x] 9.1 Cek dukungan arm64: SSI mendukung x86_64 dan arm64 (dokumentasi Datadog), integrasi `Npgsql` 4.0+ didukung tracer .NET, `Npgsql.EntityFrameworkCore.PostgreSQL` 3.1.18 tersedia. .NET 3.1 tidak perlu di-upgrade
+- [x] 9.2 Ekspor 9 baris dari SQL Server (Id 1 sampai 9, nilai identity terakhir 12)
+- [x] 9.3 Buat `k8s/postgres.yaml` (ConfigMap `init.sql` berisi skema dan seed, PVC, Deployment `postgres:16`, Service `postgres`, label `admission.datadoghq.com/enabled: "false"`)
+- [ ] 9.4 Pengguna membuat Secret `postgres-secret` (key `password`) sendiri
+- [x] 9.5 App .NET: `UseNpgsql`, paket `Npgsql.EntityFrameworkCore.PostgreSQL` 3.1.18, hapus paket SqlServer/Sqlite dan folder `Migrations/`
+- [x] 9.6 App JS: `mssql` diganti `pg`, query memakai `$n` dan `RETURNING`
+- [x] 9.7 Dockerfile multi-arch tanpa emulasi (tahap build memakai `--platform=$BUILDPLATFORM`), image `1.2` (build lokal amd64 berhasil; build arm64 diuji di Fase 11)
+- [x] 9.8 Deploy, uji CRUD kedua app, data bersama, SSI masih menyuntik, span `postgresql` ada di trace
+- [x] 9.9 Pengguna mengonfirmasi trace di UI Datadog
+- [x] 9.10 Hapus `sqlserver`, `db-init`, PVC lama, dan `sqlserver-secret`
+- [x] 9.11 Perbarui `AGENTS.md`, `README.md`, dan diagram Archify (Node 20). Diagram diubah ke PostgreSQL, di-finalize (gate lolos), SVG diekspor ulang
+
+### Fase 10: Datadog Database Monitoring (DBM) untuk Postgres
+- [ ] 10.1 `pg_stat_statements` aktif, user `datadog`, schema `datadog`, fungsi `explain_statement`
+- [ ] 10.2 Password user `datadog` di Secret, dibaca Agent lewat `ENC[k8s_secret@...]`
+- [ ] 10.3 Konfigurasi check postgres dengan `dbm: true`
+- [ ] 10.4 `DD_DBM_PROPAGATION_MODE` untuk .NET dan JS (cek dukungannya di dokumentasi dulu)
+- [ ] 10.5 Verifikasi di `agent status` dan pengguna mengonfirmasi di UI
+
+### Fase 11: Paket untuk tim dan registry GHCR
+Registry: `ghcr.io/bongcoy`, package **public** (tim tidak butuh token untuk pull). Datadog dibuat fleksibel: site, API key, `env`, dan `clusterName` ditentukan per orang oleh script setup, jadi tim bisa memakai satu org yang sama atau org berbeda.
+
+- [ ] 11.1 Manifest menunjuk ke `ghcr.io/bongcoy/dogsworld-<bahasa>:1.2`
+- [ ] 11.2 `scripts/build-push.ps1`: build multi-arch (amd64 dan arm64) lalu push (pengguna login GHCR sendiri)
+- [ ] 11.3 `scripts/setup.ps1` dan `scripts/setup.sh`: cluster, Operator (versi dikunci), Datadog (site, key, env, clusterName), Postgres, app. Bisa dijalankan ulang. Ada opsi tanpa Datadog
+- [ ] 11.4 README bagian "Untuk tim"
+- [ ] 11.5 Pengguna mengatur package GHCR menjadi public
+- [ ] 11.6 Uji di Mac Apple Silicon oleh rekan tim (tidak bisa diuji dari laptop Windows ini)
+
+### Fase 12: Konvensi tag Datadog
+Dokumen `TAGS.md` di root menjadi aturan untuk semua entity Datadog. Referensi: docs.datadoghq.com/getting_started/tagging/. Keputusan: tag wajib `env`, `service`, `version`, dan `team` (nilai `bongcoy`). Untuk infrastruktur tanpa tracer (`postgres`), cukup `env`, `service`, dan `team`.
+
+- [x] 12.1 Buat `TAGS.md` (format, aturan penulisan, reserved keys, tag UST, tag infrastruktur, tag level cluster, matriks per entity, daftar periksa)
+- [x] 12.2 `AGENTS.md`: aturan wajib tag untuk setiap entity Datadog, `TAGS.md` masuk struktur file dan konvensi UST
+- [x] 12.3 `README.md`: `TAGS.md` masuk struktur repo
+- [ ] 12.4 Terapkan `team:bongcoy` di `k8s/datadog-agent.yaml` (`global.tags`) dan tambahkan tag infrastruktur ke `k8s/postgres.yaml` (belum dikerjakan, menunggu persetujuan pengguna karena ini mengubah manifest yang sudah berjalan)
+
+Temuan: label Kubernetes biasa (misalnya `team: bongcoy`) tidak otomatis menjadi tag Datadog. Hanya label `tags.datadoghq.com/*` yang dibaca Admission Controller, jadi `team` harus lewat `global.tags` di `DatadogAgent`.
+
 ## 8. Perubahan yang dilakukan di komputer
 
 - Memasang Helm dan minikube (winget).
@@ -185,6 +227,11 @@ Risiko Fase 6 sampai 8: RAM Windows bebas hanya sekitar 2,8 GB (build Maven pali
 - Temuan: pod `sqlserver` dan `db-init` tetap tidak disuntik meski namespace-nya sama.
 - Swagger ditambahkan ke app JS (item 6.9). `/swagger/index.html` dan `/swagger/` keduanya 200, API tetap normal, pod baru tetap disuntik SSI (`datadog-lib-js-init`). Image dinaikkan ke tag `1.1` supaya `minikube image load` pasti memuat versi baru.
 - Plan Swagger untuk app Java ditambahkan sebagai item 7.10.
+- Fase 9 (PostgreSQL): `postgres:16` jalan, 9 baris data lama pindah dengan Id asli, sequence di 12 (Id baru mulai 13, sama seperti SQL Server). Kedua app `1.2` lolos CRUD (201/204/200/400/404), `birthDate` konsisten, dan data bersama terbukti (POST lewat JS terbaca .NET, dan sebaliknya). Init container SSI tetap muncul di kedua pod.
+- Bukti trace Fase 9 (log debug tracer di pod, lalu `DD_TRACE_DEBUG` dihapus lagi): JS memunculkan span `pg.query` dengan service `dogsworld-js-postgres`; .NET memunculkan `postgres.query` dengan service `dogsworld-dotnet-postgres` (tag `db.type:postgres`, `component:Npgsql`, `db.name:dogs`, `out.host:postgres`). Agent menerima trace dari nodejs 5.132.0 dan .NET 3.56.0.0.
+- Catatan: pesan `Found incompatible integration version: pg@8.23.1` hanya muncul dari proses `node -e` yang saya jalankan sendiri lewat `kubectl exec` (proses itu hanya memuat `package.json` milik `pg`, bukan `pg`). Di log aplikasi yang sebenarnya pesan itu muncul 0 kali, dan hook tracer mendukung `pg >=8.0.3`. Jadi bukan masalah, tetapi jangan menarik kesimpulan dari output `kubectl exec` yang menjalankan node baru karena SSI ikut menyuntiknya.
+- Temuan: span database memakai nama service turunan per app (`dogsworld-js-postgres` dan `dogsworld-dotnet-postgres`), jadi di Datadog muncul sebagai dua database terpisah. Itu perilaku bawaan skema penamaan span v0.
+- Gotcha: di PowerShell, argumen `psql -c` kehilangan tanda kutip ganda, jadi `"Dog"` terbaca `dog`. Kirim SQL lewat stdin (`@'...'@ | kubectl exec -i ... psql`).
 - Restrukturisasi monorepo: aplikasi .NET dipindah ke `apps/dogsworld-dotnet/` dengan `git mv` (riwayat file terjaga). `bin/`, `obj/`, dan `.vs/` dihapus karena hasil build. `.dockerignore` dirapikan karena konteks build kini folder aplikasi, jadi tidak perlu lagi mengecualikan `k8s/`, `apps/`, `.archify/`.
 - Verifikasi: `podman build apps/dogsworld-dotnet` berhasil dan menghasilkan image yang identik (semua layer dari cache). Tag `1.0` yang dipakai cluster tidak diubah.
 - Path lama di item 3.x dan 4.x (misalnya `Dockerfile`, `DogsWorld.csproj`) menunjuk ke lokasi sebelum pemindahan. Itu catatan sejarah dan sengaja tidak diubah.
@@ -194,6 +241,7 @@ Risiko Fase 6 sampai 8: RAM Windows bebas hanya sekitar 2,8 GB (build Maven pali
 - Pembersihan image: dihapus `localhost/dogsworld:1.0`, `localhost/dogsworld-js:1.0`, `quay.io/podman/hello`, container `hello` yang sudah selesai, dan 2 image dangling (masing-masing 1,22 GB) dari Podman. `localhost/dogsworld:1.0` dan `localhost/dogsworld-js:1.0` juga dihapus dari minikube.
 - Archify: dengan Node 22.14.0 `finalize` tetap gagal (`finalize-receipt-changed-during-inspection`, `output/target-changed`). Akar masalah dibuktikan tanpa Archify: `fs.lstatSync(README.md).dev` = 0 sedangkan `fs.fstatSync(...).dev` = 2999742434 untuk file yang sama. Node 20.20.2 dipasang lewat `nvm install 20.20.2` (Node aktif tetap 22.14.0). Di Node 20 `lstat` dan `fstat` sama, dan `finalize` lolos keempat gate (validate, deliver, check, browser-check) untuk kedua diagram. Hasil dibuka di browser dan dicek dengan mata: nama `dogsworld-dotnet` benar, tidak ada label yang menumpuk.
 - Diagram dibuat ulang dengan Archify (arsitektur sekarang menampilkan app .NET dan JS). Dua file `manual-*.html` dan folder percobaan gagal lama dihapus. Catatan kegagalan diganti dengan petunjuk memakai Node 20 di `AGENTS.md`, karena bug Node 22 masih ada di komputer ini. `.gitignore` kini hanya mengabaikan receipt (`*.finalize.json`, dll) dan folder `.playwright-mcp/`, sedangkan `candidate.json` dan HTML di-commit.
+- Temuan (22 Okt, sesi trace kosong): gejala "service terbaca tapi trace kosong" disebabkan Adaptive Sampling dari Datadog. Log tracer .NET menunjukkan `"sampling_rules": "[{\"sample_rate\":0.01}]"` padahal manifest mengatur `1`. Setelah Adaptive Sampling dimatikan di Ingestion Control, trace muncul dan pengguna mengonfirmasi (9.9). Perbaikan permanen sudah dilakukan lewat UI, bukan lewat manifest.
 - Temuan (trace tidak muncul di Live Tail, dan dulu hanya `GET /api/dogs` yang terbaca): Adaptive Sampling di Datadog (Ingestion Control, "All resources dynamically adjusted") mengirim aturan sampling lewat Remote Configuration (`provenance: dynamic`). Log tracer .NET menunjukkan aturan berubah dari tanpa aturan (16:05), menjadi `GET /api/dogs`, `GET /api/dogs/{id}`, dan `*` masing-masing 1 (16:14), lalu `*` = 0,01 (16:25). Pada 300 request GET, Agent menerima 300 trace tetapi hanya menulis 3 ke Datadog. Jalur jaringan, API key, dan tracer JS sudah dipastikan normal.
 - Perbaikan: `DD_TRACE_SAMPLING_RULES='[{"sample_rate":1}]'` ditambahkan ke `k8s/dogsworld-dotnet.yaml` dan `k8s/dogsworld-js.yaml`, lalu `kubectl apply` (rollout otomatis). Hasil uji: Agent menerima 22 trace .NET dan 20 trace JS, Writer menulis 62 trace (sebelumnya 3). Namun 3 detik setelah aturan lokal terpasang, log .NET (17:22:25) menunjukkan aturan dynamic menggantikannya (`GET /api/dogs/{id}` = 1 dan `*` = 1). Jadi aturan lokal TIDAK menang atas Adaptive Sampling. Saat ini rate-nya kebetulan 1, tetapi Datadog bisa menurunkannya lagi. Perbaikan permanen: matikan Adaptive Sampling untuk kedua service di Ingestion Control (belum dilakukan, menunggu pengguna), atau pertimbangkan `DD_REMOTE_CONFIGURATION_ENABLED=false`.
 - Uji POST, PUT, DELETE: satu dog sementara dibuat, diubah, dihapus di tiap aplikasi (201, 204, 200). Data kembali ke 9 dog (id 1 sampai 9). ID identity 11 dan 12 terpakai dan tidak akan dipakai lagi.

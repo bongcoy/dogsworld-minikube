@@ -12,7 +12,7 @@
     { "id": "svc", "type": "cloud", "label": "Service", "sublabel": "dogsworld-dotnet :80" },
     { "id": "app", "type": "backend", "label": "dogsworld-dotnet", "sublabel": "ASP.NET + EF Core" },
     { "id": "tracer", "type": "security", "label": "Tracer .NET", "sublabel": "disuntik SSI" },
-    { "id": "sql", "type": "database", "label": "SQL Server", "sublabel": "Dogs.dbo.Dog" },
+    { "id": "sql", "type": "database", "label": "PostgreSQL", "sublabel": "dogs.\"Dog\"" },
     { "id": "agent", "type": "backend", "label": "datadog-agent", "sublabel": "trace-agent" },
     { "id": "datadog", "type": "external", "label": "Datadog ap1", "sublabel": "APM" }
   ],
@@ -24,7 +24,7 @@
     { "id": "get-dogs", "from": "browser", "to": "svc", "y": 180, "label": "GET /api/dogs", "variant": "emphasis" },
     { "id": "forward", "from": "svc", "to": "app", "y": 205, "label": "forward :8080", "variant": "default" },
     { "id": "span-start", "from": "app", "to": "tracer", "y": 228, "label": "mulai span", "variant": "dashed", "note": "Tracer membuat span HTTP otomatis" },
-    { "id": "select", "from": "app", "to": "sql", "y": 295, "label": "SELECT Dog", "variant": "emphasis", "note": "Tracer juga menangkap span SQL otomatis" },
+    { "id": "select", "from": "app", "to": "sql", "y": 295, "label": "SELECT Dog", "variant": "emphasis", "note": "Tracer juga menangkap span database otomatis" },
     { "id": "rows", "from": "sql", "to": "app", "y": 355, "label": "daftar dog", "variant": "return" },
     { "id": "json", "from": "app", "to": "svc", "y": 381, "label": "200 JSON", "variant": "return" },
     { "id": "response", "from": "svc", "to": "browser", "y": 405, "label": "200 JSON", "variant": "return" },
@@ -42,7 +42,7 @@
       "dot": "emerald",
       "title": "Jalur utama",
       "items": [
-        "Browser ke Service, lalu ke dogsworld-dotnet dan SQL Server",
+        "Browser ke Service, lalu ke dogsworld-dotnet dan PostgreSQL",
         "Response tidak menunggu pengiriman trace",
         "Aplikasi tidak diubah untuk tracing"
       ]

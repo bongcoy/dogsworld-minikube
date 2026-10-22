@@ -7,9 +7,10 @@ Panduan untuk agent yang bekerja di repo ini. Baca file ini dulu, lalu baca `PLA
 **Tujuan pengguna:** belajar Podman, Kubernetes, Helm, dan Datadog lewat praktik. Pengguna pemula, jadi setiap langkah dan istilah perlu dijelaskan.
 
 **Yang sudah dibangun:**
-- Aplikasi **DogsWorld** (.NET Core 3.1, ASP.NET + EF Core + SQL Server) di `apps/dogsworld-dotnet/`. Berjalan di cluster minikube dan di-instrument Datadog APM dengan **Single Step Instrumentation (SSI)** lewat **Datadog Operator**.
-- Aplikasi **dogsworld-js** (Express + `mssql`) di `apps/dogsworld-js/`. CRUD-nya sama dengan .NET dan memakai database yang sama. Sudah ter-instrument SSI.
-- Rencana untuk aplikasi **dogsworld-java** (Javalin + `mssql-jdbc`) di namespace `dogsworld-java-test`. Belum dibuat (Fase 7).
+- Aplikasi **DogsWorld** (.NET Core 3.1, ASP.NET + EF Core + Npgsql) di `apps/dogsworld-dotnet/`. Berjalan di cluster minikube dan di-instrument Datadog APM dengan **Single Step Instrumentation (SSI)** lewat **Datadog Operator**.
+- Aplikasi **dogsworld-js** (Express + `pg`) di `apps/dogsworld-js/`. CRUD-nya sama dengan .NET dan memakai database yang sama. Sudah ter-instrument SSI.
+- Database: **PostgreSQL 16** (`postgres:16`) di `k8s/postgres.yaml`. Migrasi dari SQL Server selesai (Fase 9). SQL Server dihapus.
+- Rencana untuk aplikasi **dogsworld-java** (Javalin + driver JDBC PostgreSQL) di namespace `dogsworld-java-test`. Belum dibuat (Fase 7).
 - Diagram arsitektur dan sequence dibuat dengan skill Archify (lolos validate, deliver, check, dan browser-check) di `.archify/`.
 
 **Status terkini:**
@@ -23,8 +24,7 @@ Panduan untuk agent yang bekerja di repo ini. Baca file ini dulu, lalu baca `PLA
 |---|---|---|---|
 | `dogsworld` | `dogsworld-dotnet-*` | `dogsworld-dotnet` | .NET, disuntik SSI (js dan dotnet) |
 | `dogsworld` | `dogsworld-js-*` | `dogsworld-js` | Node, disuntik SSI (js dan dotnet) |
-| `dogsworld` | `sqlserver-*` | `sqlserver` | SQL Server 2019 Express, tidak disuntik |
-| `dogsworld` | `db-init-*` | `sqlcmd` | Job sekali jalan, tidak disuntik |
+| `dogsworld` | `postgres-*` | `postgres` | PostgreSQL 16, tidak disuntik |
 | `datadog` | `datadog-agent-*` | `agent`, `trace-agent`, `system-probe` | DaemonSet, 1 pod per node |
 | `datadog` | `datadog-cluster-agent-*` | `cluster-agent` | |
 | `datadog` | `datadog-operator-*` | `datadog-operator` | |
@@ -34,7 +34,7 @@ Cluster hanya punya 1 node: `minikube`, yang juga control plane.
 **Konsep yang sudah dijelaskan ke pengguna:**
 - Pod, Deployment, dan kapan pod baru dibuat. Container dalam satu pod berbagi jaringan dan volume (pola sidecar). Pisahkan jadi pod berbeda jika komponen bisa di-scale atau di-update sendiri.
 - Cluster adalah kumpulan node ditambah control plane. Banyak cluster dikelola lewat context `kubectl`.
-- Namespace adalah pengelompokan nama. Secret dan Service DNS terikat namespace (`sqlserver.dogsworld.svc.cluster.local`).
+- Namespace adalah pengelompokan nama. Secret dan Service DNS terikat namespace (`postgres.dogsworld.svc.cluster.local`).
 - SSI: `DatadogAgent` dengan `targets` memilih workload lewat namespace dan `ddTraceVersions` memilih bahasa. Cluster Agent menyuntik init container lewat admission webhook. Tracer dipasang ke pod dan diaktifkan lewat `LD_PRELOAD`.
 - Port-forward bisa dibuat dari Podman Desktop (Kubernetes → Services → Forward...) atau dengan `kubectl port-forward`.
 
@@ -59,7 +59,7 @@ Cluster hanya punya 1 node: `minikube`, yang juga control plane.
 - **Suntikan SSI hanya terjadi saat pod dibuat.** Setelah mengubah `targets` atau `ddTraceVersions`, jalankan `kubectl rollout restart deployment <nama> -n <namespace>`.
 - **Adaptive Sampling dari Datadog bisa membuang hampir semua trace.** Aturan dikirim lewat Remote Configuration (di log tracer bertanda `provenance: dynamic`) dan pernah menjadi 1%, sehingga Live Tail kosong. Gejalanya: `agent status` menunjukkan "Traces received" besar tetapi Writer "Traces" kecil. Deployment kini memakai `DD_TRACE_SAMPLING_RULES='[{"sample_rate":1}]'`, tetapi aturan dynamic tetap bisa menggantikannya, jadi solusi permanen adalah mematikan Adaptive Sampling di UI. Cek aturan aktif lewat `"sampling_rules"` di `/var/log/datadog/dotnet/dotnet-tracer-managed-dotnet-1.log`. Pengaturan UI ada di APM, Setup & Configuration, Ingestion Control.
 - **Pod yang dibuat saat Cluster Agent sedang diganti bisa tidak mendapat tracer yang diharapkan.** Solusinya: rollout restart.
-- **Pod yang di-inject hanya mendapat tracer untuk bahasa yang ada di `ddTraceVersions` dan cocok dengan workload.** Pod `sqlserver` dan `db-init` tidak disuntik.
+- **Pod yang di-inject hanya mendapat tracer untuk bahasa yang ada di `ddTraceVersions` dan cocok dengan workload.** Pod `postgres` tidak disuntik.
 - **Aturan target dievaluasi berurutan**, target pertama yang cocok yang dipakai. Blok `DatadogInstrumentation` per workload butuh Agent/Cluster Agent 7.85+.
 - **Bahasa `ddTraceVersions` yang didukung:** `java`, `js`, `python`, `dotnet`, `ruby`, `php`, `c`.
 - **Port-forward berhenti** saat terminal ditutup, pod dibuat ulang, atau minikube di-stop. "Not found" di Swagger sebelumnya disebabkan forward yang mati.
@@ -88,7 +88,7 @@ DogsWorld/
 │   │   ├── Startup.cs                (Swagger aktif di luar IsDevelopment)
 │   │   └── appsettings.json          (connection string untuk jalan lokal)
 │   └── dogsworld-js/
-│       ├── package.json              (express, mssql, swagger-ui-express)
+│       ├── package.json              (express, pg, swagger-ui-express)
 │       ├── src/server.js             (CRUD /api/dogs, Swagger di /swagger)
 │       ├── src/openapi.json          (spesifikasi OpenAPI manual, update jika endpoint berubah)
 │       ├── Dockerfile                (node:20-slim, user node)
@@ -97,8 +97,7 @@ DogsWorld/
 │   ├── datadog-agent.yaml            (DatadogAgent, SSI, targets namespace dogsworld)
 │   ├── dogsworld-dotnet.yaml         (Deployment + Service .NET, label UST)
 │   ├── dogsworld-js.yaml             (Deployment + Service JS, label UST)
-│   ├── sqlserver.yaml                (PVC, Deployment, Service SQL Server)
-│   └── db-init-job.yaml              (Job pembuat database Dogs dan tabel dbo.Dog)
+│   └── postgres.yaml                 (ConfigMap initdb, PVC, Deployment, Service PostgreSQL)
 └── .archify/
     ├── architecture-dogsworld-20261021-231326/   (Diagram 1: candidate.json + dogsworld-architecture.html)
     └── sequence-dogsworld-request-20261021-231326/ (Diagram 2: candidate.json + dogsworld-request-sequence.html)
@@ -142,7 +141,7 @@ minikube image load localhost/<nama>:1.0
 
 1. Pengguna memeriksa UI Datadog (`ap1.datadoghq.com`):
    - APM → Services: `dogsworld-js` dengan env `dev`.
-   - Trace JS berisi span SQL dari `mssql`.
+   - Trace JS berisi span database dari `pg` (service `dogsworld-js-postgres`).
    - Infrastructure → Kubernetes: cluster `dogsworld-minikube`.
 2. Setelah konfirmasi, centang 6.8 di `PLAN.md`.
 3. Lanjut ke Fase 7 (Java, namespace `dogsworld-java-test`). Ikuti urutan dan uji teori di `PLAN.md`.

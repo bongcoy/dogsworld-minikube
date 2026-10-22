@@ -13,7 +13,7 @@
     { "id": "app-dotnet", "type": "backend", "label": "dogsworld-dotnet", "sublabel": ".NET Core 3.1 :8080", "tag": "ns dogsworld", "pos": [450, 150], "size": [150, 64] },
     { "id": "svc-js", "type": "cloud", "label": "Service", "sublabel": "dogsworld-js :80", "tag": "ns dogsworld", "pos": [220, 410], "size": [140, 64] },
     { "id": "app-js", "type": "backend", "label": "dogsworld-js", "sublabel": "Node 20 + Express :8080", "tag": "ns dogsworld", "pos": [450, 410], "size": [150, 64] },
-    { "id": "sql", "type": "database", "label": "SQL Server", "sublabel": "2019 Express :1433", "tag": "svc sqlserver", "pos": [680, 280], "size": [140, 64] },
+    { "id": "sql", "type": "database", "label": "PostgreSQL", "sublabel": "16 :5432", "tag": "svc postgres", "pos": [680, 280], "size": [140, 64] },
     { "id": "operator", "type": "backend", "label": "Datadog Operator", "sublabel": "Helm chart", "tag": "ns datadog", "pos": [250, 280], "size": [130, 64] },
     { "id": "cluster-agent", "type": "security", "label": "Cluster Agent", "sublabel": "Admission Controller SSI", "tag": "ns datadog", "pos": [450, 280], "size": [150, 64] },
     { "id": "dd-agent", "type": "backend", "label": "datadog-agent", "sublabel": "DaemonSet, trace-agent", "tag": "ns datadog", "pos": [900, 280], "size": [140, 64] },
@@ -37,8 +37,8 @@
     { "id": "send-datadog", "from": "dd-agent", "to": "datadog", "label": "HTTPS", "variant": "emphasis" }
   ],
   "cards": [
-    { "dot": "cyan", "title": "Alur request", "items": ["Browser masuk lewat port-forward ke Service", "Service meneruskan ke pod aplikasi di port 8080", "Kedua aplikasi membaca database Dogs yang sama di SQL Server"] },
+    { "dot": "cyan", "title": "Alur request", "items": ["Browser masuk lewat port-forward ke Service", "Service meneruskan ke pod aplikasi di port 8080", "Kedua aplikasi membaca database dogs yang sama di PostgreSQL"] },
     { "dot": "emerald", "title": "Instrumentasi SSI", "items": ["Operator membuat Agent dan Cluster Agent dari DatadogAgent", "Cluster Agent menyuntikkan tracer saat pod dibuat", "Tracer mengirim span ke datadog-agent lewat socket Unix", "Tidak ada tracer di Dockerfile atau kode"] },
-    { "dot": "rose", "title": "Rahasia dan data", "items": ["API key di Secret datadog-secret, dibuat manual", "Password SA di Secret sqlserver-secret", "Data SQL Server di PVC, database Dogs dibuat Job db-init", "SQL Server dan db-init tidak disuntik tracer"] }
+    { "dot": "rose", "title": "Rahasia dan data", "items": ["API key di Secret datadog-secret, dibuat manual", "Password database di Secret postgres-secret, dibuat manual", "Data PostgreSQL di PVC, tabel dibuat ConfigMap postgres-init", "PostgreSQL tidak disuntik tracer"] }
   ]
 }

@@ -1,0 +1,25 @@
+# Izin agar Datadog Agent (namespace datadog) bisa membaca Secret password user "datadog" di namespace dogsworld.
+# Dibutuhkan karena password dibaca lewat ENC[dogsworld/datadog-pg-secret;password].
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: datadog-secret-reader
+  namespace: dogsworld
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: datadog-secret-access
+  namespace: dogsworld
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: datadog-secret-reader
+subjects:
+  - kind: ServiceAccount
+    name: datadog-agent
+    namespace: datadog

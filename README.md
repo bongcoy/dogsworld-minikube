@@ -17,7 +17,7 @@ DogsWorld/
 ├── PLAN.md
 ├── apps/
 │   ├── dogsworld-dotnet/   .NET Core 3.1 (ASP.NET + EF Core), port 8080
-│   ├── dogsworld-js/       Node 20 (Express + mssql), port 8080
+│   ├── dogsworld-js/       Node 20 (Express + pg), port 8080
 │   └── dogsworld-java/     Java (Javalin), belum dibuat (Fase 7)
 ├── k8s/                    manifest Kubernetes yang dipakai bersama
 └── .archify/               diagram arsitektur dan sequence (HTML dan SVG)
@@ -31,8 +31,7 @@ Setiap aplikasi punya `Dockerfile` dan `.dockerignore` sendiri. Konteks build ad
 |---|---|---|
 | `dogsworld` | `dogsworld-dotnet` (.NET) | Disuntik tracer oleh SSI |
 | `dogsworld` | `dogsworld-js` (Node) | Disuntik tracer oleh SSI |
-| `dogsworld` | `sqlserver` | SQL Server 2019 Express, data disimpan di PVC. Tidak disuntik |
-| `dogsworld` | `db-init` | Job sekali jalan yang membuat database `Dogs` dan tabel `dbo.Dog` |
+| `dogsworld` | `postgres` | PostgreSQL 16, data disimpan di PVC. Tabel dibuat lewat ConfigMap `postgres-init`. Tidak disuntik |
 | `datadog` | Operator, Agent, Cluster Agent | Mengirim data ke `ap1.datadoghq.com` |
 
 Semua aplikasi memakai **database yang sama**. Menghapus data dari satu aplikasi juga menghapusnya untuk aplikasi lain. Itu disengaja untuk bahan belajar.
@@ -92,26 +91,26 @@ kubectl apply -f k8s/datadog-agent.yaml
 kubectl get pods -n datadog
 ```
 
-### 3. Namespace, SQL Server, dan database
+### 3. Namespace, PostgreSQL, dan database
 
 ```powershell
 kubectl apply -f k8s/namespace.yaml
-kubectl create secret generic sqlserver-secret -n dogsworld --from-literal sa-password=<PASSWORD_BARU>
-kubectl apply -f k8s/sqlserver.yaml
-kubectl apply -f k8s/db-init-job.yaml
+kubectl create secret generic postgres-secret -n dogsworld --from-literal password=<PASSWORD_BARU>
+kubectl apply -f k8s/postgres.yaml
+kubectl rollout status deployment/postgres -n dogsworld
 ```
 
-Ganti `<PASSWORD_BARU>` dengan password kuat pilihanmu. Password tidak ditulis di file YAML mana pun.
+Ganti `<PASSWORD_BARU>` dengan password kuat pilihanmu. Password tidak ditulis di file YAML mana pun. `k8s/postgres.yaml` membuat user `dogsworld`, database `dogs`, tabel `"Dog"`, dan 9 baris contoh lewat ConfigMap `postgres-init`. Skrip itu hanya berjalan saat volume masih kosong.
 
 ### 4. Build dan muat image
 
 Image dibangun di Podman, lalu dimuat ke minikube.
 
 ```powershell
-podman build -t dogsworld-dotnet:1.1 apps/dogsworld-dotnet
-podman build -t dogsworld-js:1.1 apps/dogsworld-js
-minikube image load localhost/dogsworld-dotnet:1.1
-minikube image load localhost/dogsworld-js:1.1
+podman build -t dogsworld-dotnet:1.2 apps/dogsworld-dotnet
+podman build -t dogsworld-js:1.2 apps/dogsworld-js
+minikube image load localhost/dogsworld-dotnet:1.2
+minikube image load localhost/dogsworld-js:1.2
 ```
 
 ### 5. Deploy aplikasi
