@@ -187,7 +187,8 @@ Dokumen `TAGS.md` di root menjadi aturan untuk semua entity Datadog. Referensi: 
 - [x] 12.1 Buat `TAGS.md` (format, aturan penulisan, reserved keys, tag UST, tag infrastruktur, tag level cluster, matriks per entity, daftar periksa)
 - [x] 12.2 `AGENTS.md`: aturan wajib tag untuk setiap entity Datadog, `TAGS.md` masuk struktur file dan konvensi UST
 - [x] 12.3 `README.md`: `TAGS.md` masuk struktur repo
-- [ ] 12.4 Terapkan `team:bongcoy` di `k8s/datadog-agent.yaml` (`global.tags`) dan tambahkan tag infrastruktur ke `k8s/postgres.yaml` (belum dikerjakan, menunggu persetujuan pengguna karena ini mengubah manifest yang sudah berjalan)
+- [x] 12.4 Terapkan `team:bongcoy` di `k8s/datadog-agent.yaml` (`global.tags`) dan pastikan `k8s/postgres.yaml` sesuai `TAGS.md`. `team:bongcoy` sudah ada di manifest (commit `af98c9e`) dan aktif di cluster. Pod `datadog-agent-hmkhp` membawa `DD_TAGS=["env:dev","team:bongcoy"]` dan `DD_CLUSTER_NAME=dogsworld-minikube`. `postgres.yaml` sudah punya label `env:dev` dan `service:postgres` di Deployment dan pod template, jadi tidak diubah. Tidak ada `kubectl apply` baru, dan tidak ada pod yang perlu di-restart
+- [x] 12.5 Audit `dogsworld-dotnet.yaml` dan `dogsworld-js.yaml` terhadap daftar periksa `TAGS.md`. Hasil: keduanya sudah punya label UST di metadata dan pod template, `service` sama dengan nama aplikasi, dan `version` `"1.2"` sama dengan tag image. Tidak ada yang perlu diubah
 
 Temuan: label Kubernetes biasa (misalnya `team: bongcoy`) tidak otomatis menjadi tag Datadog. Hanya label `tags.datadoghq.com/*` yang dibaca Admission Controller, jadi `team` harus lewat `global.tags` di `DatadogAgent`.
 
