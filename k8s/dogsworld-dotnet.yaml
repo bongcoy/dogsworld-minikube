@@ -37,6 +37,8 @@ spec:
               value: "Host=postgres;Port=5432;Database=dogs;Username=dogsworld;Password=$(DB_PASSWORD)"
             - name: DD_TRACE_SAMPLING_RULES
               value: '[{"sample_rate":1}]'
+            - name: DD_DBM_PROPAGATION_MODE
+              value: "full"
           resources:
             requests:
               memory: "256Mi"

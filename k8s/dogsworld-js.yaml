@@ -37,6 +37,8 @@ spec:
                   key: password
             - name: DD_TRACE_SAMPLING_RULES
               value: '[{"sample_rate":1}]'
+            - name: DD_DBM_PROPAGATION_MODE
+              value: "full"
           resources:
             requests:
               memory: "128Mi"

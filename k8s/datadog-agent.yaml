@@ -15,6 +15,22 @@ spec:
       apiSecret:
         secretName: datadog-secret
         keyName: api-key
+    secretBackend:
+      type: "k8s.secrets"
+  override:
+    nodeAgent:
+      extraConfd:
+        configDataMap:
+          postgres.yaml: |-
+            ad_identifiers:
+              - postgres
+            init_config:
+            instances:
+              - dbm: true
+                host: "%%host%%"
+                port: 5432
+                username: datadog
+                password: "ENC[dogsworld/datadog-pg-secret;password]"
   features:
     apm:
       instrumentation:
