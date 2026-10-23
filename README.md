@@ -68,7 +68,58 @@ Di PowerShell yang baru dibuka, PATH kadang belum diperbarui. Jalankan ini dulu:
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 ```
 
+## Untuk tim (cara cepat)
+
+Image aplikasi ada di GHCR (`ghcr.io/bongcoy/dogsworld-<bahasa>:1.2`, multi-arch amd64 dan arm64, package publik), jadi tidak perlu build sendiri. Satu script menyiapkan semuanya: cluster, Operator, Agent, PostgreSQL, user DBM, dan kedua aplikasi.
+
+Prasyarat: Podman (atau Docker), minikube, kubectl, Helm. Di Mac Apple Silicon, pakai Podman machine atau Docker Desktop yang berjalan di arm64.
+
+| Pilihan | Arti |
+|---|---|
+| site | Site Datadog milikmu, misalnya `ap1.datadoghq.com`, `datadoghq.com`, `us5.datadoghq.com` |
+| API key | Dari org Datadog milikmu. Diketik tersembunyi atau dari env `DD_API_KEY`. Tidak ditulis ke file |
+| env | Tag `env`, misalnya namamu. Huruf kecil (lihat [`TAGS.md`](TAGS.md)) |
+| clusterName | Nama cluster di Datadog. Pakai nama unik per orang jika berbagi satu org |
+
+Windows (PowerShell):
+
+```powershell
+.\scripts\setup.ps1
+# atau tanpa pertanyaan:
+.\scripts\setup.ps1 -Site ap1.datadoghq.com -Env alice -ClusterName dogsworld-alice
+```
+
+macOS atau Linux:
+
+```bash
+./scripts/setup.sh
+# atau tanpa pertanyaan:
+./scripts/setup.sh --site ap1.datadoghq.com --env alice --cluster-name dogsworld-alice
+```
+
+Opsi lain (sama di kedua script):
+
+| PowerShell | Bash | Fungsi |
+|---|---|---|
+| `-NoDatadog` | `--no-datadog` | Hanya aplikasi dan PostgreSQL, tanpa Datadog |
+| `-SkipCluster` | `--skip-cluster` | Pakai cluster yang sudah jalan (context `kubectl` aktif) |
+| `-LocalImages` | `--local-images` | Build image dari `apps/` dan muat ke minikube, tanpa GHCR |
+| `-OperatorVersion` | `--operator-version` | Versi chart Operator (default `2.30.0`) |
+
+Script aman dijalankan ulang. Secret yang sudah ada (`datadog-secret`, `postgres-secret`, `datadog-pg-secret`) tidak ditimpa. Password database dibuat acak dan hanya ada di Secret. Berbagi satu org Datadog? Beri `env` dan `clusterName` yang berbeda per orang agar data tidak tercampur.
+
+Untuk pemilik image (`bongcoy`), build dan push multi-arch:
+
+```powershell
+podman login ghcr.io -u bongcoy      # pakai Personal Access Token dengan scope write:packages
+.\scripts\build-push.ps1 -Version 1.2
+```
+
+Package GHCR baru bersifat private. Ubah ke Public sekali di GitHub (Packages, Package settings, Change visibility).
+
 ## Menjalankan dari nol
+
+Bagian ini langkah manual yang sama dengan script di atas, untuk belajar. Image di manifest sekarang menunjuk ke GHCR. Kalau belum di-push, build lokal lalu ganti `image` ke `localhost/...`, atau pakai `-LocalImages` pada script.
 
 ### 1. Cluster
 

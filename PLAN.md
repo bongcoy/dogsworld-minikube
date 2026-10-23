@@ -169,15 +169,20 @@ Catatan implementasi (22 Okt):
 - [x] 10.2 Password user `datadog` di Secret `datadog-pg-secret` (key `password`, dibuat acak lewat kubectl, nilainya tidak ditampilkan), dibaca Agent lewat `ENC[dogsworld/datadog-pg-secret;password]`
 - [x] 10.3 Konfigurasi check postgres dengan `dbm: true` (di `DatadogAgent` lewat `override.nodeAgent.extraConfd`)
 - [x] 10.4 `DD_DBM_PROPAGATION_MODE=full` untuk .NET dan JS (didukung: dd-trace-dotnet 2.35.0+ dan dd-trace-js 3.17.0+, tracer saat ini .NET 3.56.0.0 dan JS 5.132.0)
-- [ ] 10.5 Verifikasi di `agent status` dan pengguna mengonfirmasi di UI
+- [x] 10.5 Verifikasi di `agent status` dan pengguna mengonfirmasi di UI
 
 ### Fase 11: Paket untuk tim dan registry GHCR
+Catatan implementasi (22 Okt):
+- `k8s/postgres.yaml` mendapat env `DD_PG_PASSWORD` (dari Secret `datadog-pg-secret`, `optional: true`) supaya `scripts/dbm-setup.sh` bisa membuat user `datadog` tanpa password lewat argumen. Tanpa Datadog, Secret itu tidak ada dan pod tetap jalan.
+- `.gitattributes` baru: `*.sh` selalu LF (repo ini `core.autocrlf=true` di Windows, CRLF merusak script bash).
+- Script mengganti `env`, `clusterName`, dan `site` lewat penggantian teks pada manifest saat `apply`, jadi file YAML di repo tetap nilai default (`dev`, `dogsworld-minikube`, `ap1.datadoghq.com`).
+- Pod app dan Postgres dibuat sebelum Agent siap, jadi script me-restart app sekali setelah Cluster Agent siap (suntikan SSI hanya saat pod dibuat).
 Registry: `ghcr.io/bongcoy`, package **public** (tim tidak butuh token untuk pull). Datadog dibuat fleksibel: site, API key, `env`, dan `clusterName` ditentukan per orang oleh script setup, jadi tim bisa memakai satu org yang sama atau org berbeda.
 
-- [ ] 11.1 Manifest menunjuk ke `ghcr.io/bongcoy/dogsworld-<bahasa>:1.2`
-- [ ] 11.2 `scripts/build-push.ps1`: build multi-arch (amd64 dan arm64) lalu push (pengguna login GHCR sendiri)
-- [ ] 11.3 `scripts/setup.ps1` dan `scripts/setup.sh`: cluster, Operator (versi dikunci), Datadog (site, key, env, clusterName), Postgres, app. Bisa dijalankan ulang. Ada opsi tanpa Datadog
-- [ ] 11.4 README bagian "Untuk tim"
+- [x] 11.1 Manifest menunjuk ke `ghcr.io/bongcoy/dogsworld-<bahasa>:1.2` (cluster lokal ini masih memakai image `localhost/...:1.2` yang sudah ada di minikube, jangan `kubectl apply` manifest app sebelum image di-push)
+- [~] 11.2 `scripts/build-push.ps1`: build multi-arch (amd64 dan arm64) lalu push. Build multi-arch kedua app sudah teruji (manifest berisi amd64 dan arm64). Push belum, menunggu pengguna login GHCR dan menjalankan script
+- [x] 11.3 `scripts/setup.ps1` dan `scripts/setup.sh` (plus `scripts/dbm-setup.sh` untuk user DBM): cluster, Operator (versi dikunci 2.30.0), Datadog (site, key, env, clusterName), Postgres, app. Bisa dijalankan ulang. Opsi `-NoDatadog`, `-SkipCluster`, `-LocalImages`. Sintaks teruji (parser PowerShell, `bash -n`) dan `kubectl apply --dry-run`. Belum dijalankan penuh di cluster baru
+- [x] 11.4 README bagian "Untuk tim"
 - [ ] 11.5 Pengguna mengatur package GHCR menjadi public
 - [ ] 11.6 Uji di Mac Apple Silicon oleh rekan tim (tidak bisa diuji dari laptop Windows ini)
 

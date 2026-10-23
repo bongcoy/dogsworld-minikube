@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: dogsworld-js
-          image: localhost/dogsworld-js:1.2
+          image: ghcr.io/bongcoy/dogsworld-js:1.2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

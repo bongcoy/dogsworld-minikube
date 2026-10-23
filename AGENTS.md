@@ -95,8 +95,14 @@ DogsWorld/
 │       ├── src/openapi.json          (spesifikasi OpenAPI manual, update jika endpoint berubah)
 │       ├── Dockerfile                (node:20-slim, user node)
 │       └── .dockerignore             (node_modules/)
+├── .gitattributes                    (*.sh wajib LF)
+├── scripts/
+│   ├── setup.ps1, setup.sh           (setup penuh untuk tim: cluster, Operator, Agent, Postgres, app)
+│   ├── dbm-setup.sh                  (dijalankan di dalam pod postgres: user datadog untuk DBM)
+│   └── build-push.ps1                (build multi-arch dan push ke ghcr.io/bongcoy)
 ├── k8s/
-│   ├── datadog-agent.yaml            (DatadogAgent, SSI, targets namespace dogsworld)
+│   ├── datadog-dbm-rbac.yaml         (Role/RoleBinding: Agent boleh baca Secret datadog-pg-secret)
+│   ├── datadog-agent.yaml            (DatadogAgent, SSI, check postgres DBM, targets namespace dogsworld)
 │   ├── dogsworld-dotnet.yaml         (Deployment + Service .NET, label UST)
 │   ├── dogsworld-js.yaml             (Deployment + Service JS, label UST)
 │   └── postgres.yaml                 (ConfigMap initdb, PVC, Deployment, Service PostgreSQL)

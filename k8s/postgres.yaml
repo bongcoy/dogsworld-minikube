@@ -83,6 +83,12 @@ spec:
                 secretKeyRef:
                   name: postgres-secret
                   key: password
+            - name: DD_PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-pg-secret
+                  key: password
+                  optional: true
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           readinessProbe:

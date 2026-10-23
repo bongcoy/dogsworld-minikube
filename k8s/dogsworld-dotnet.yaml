@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: dogsworld-dotnet
-          image: localhost/dogsworld-dotnet:1.2
+          image: ghcr.io/bongcoy/dogsworld-dotnet:1.2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
