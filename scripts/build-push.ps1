@@ -11,29 +11,32 @@ param(
     [string[]]$Platforms = @("linux/amd64", "linux/arm64")
 )
 
-$ErrorActionPreference = "Stop"
+# "Continue": di Windows PowerShell 5.1, teks stderr dari podman dianggap error bila "Stop".
+# Kegagalan sungguhan tetap tertangkap lewat pengecekan $LASTEXITCODE.
+$ErrorActionPreference = "Continue"
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 $root = Split-Path -Parent $PSScriptRoot
 
-$host.UI.RawUI.WindowTitle = "build-push $Version"
-podman login --get-login ghcr.io *> $null
+podman login --get-login ghcr.io 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Belum login ke ghcr.io. Jalankan: podman login ghcr.io -u bongcoy (pakai Personal Access Token dengan scope write:packages)"
+    Write-Host "Belum login ke ghcr.io. Jalankan: podman login ghcr.io -u bongcoy (pakai Personal Access Token dengan scope write:packages)" -ForegroundColor Red
+    exit 1
 }
 
 foreach ($app in $Apps) {
     $dir = Join-Path $root "apps\$app"
-    if (-not (Test-Path (Join-Path $dir "Dockerfile"))) { Write-Error "Tidak ada Dockerfile di $dir" }
+    if (-not (Test-Path (Join-Path $dir "Dockerfile"))) { Write-Host "Tidak ada Dockerfile di $dir" -ForegroundColor Red; exit 1 }
     $ref = "$Registry/${app}:$Version"
 
     Write-Host "== Build $ref ($($Platforms -join ', '))"
-    podman manifest rm $ref *> $null
+    podman manifest exists $ref 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) { podman manifest rm $ref | Out-Null }
     podman build --platform ($Platforms -join ",") --manifest $ref $dir
-    if ($LASTEXITCODE -ne 0) { Write-Error "Build $app gagal" }
+    if ($LASTEXITCODE -ne 0) { Write-Host "Build $app gagal" -ForegroundColor Red; exit 1 }
 
     Write-Host "== Push $ref"
     podman manifest push --all $ref "docker://$ref"
-    if ($LASTEXITCODE -ne 0) { Write-Error "Push $app gagal" }
+    if ($LASTEXITCODE -ne 0) { Write-Host "Push $app gagal" -ForegroundColor Red; exit 1 }
 }
 
 Write-Host ""

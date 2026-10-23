@@ -22,7 +22,9 @@ param(
     [int]$MemoryMb = 4096
 )
 
-$ErrorActionPreference = "Stop"
+# "Continue": di Windows PowerShell 5.1, teks stderr dari kubectl/helm dianggap error bila "Stop".
+# Kegagalan sungguhan tetap tertangkap lewat fungsi Run (cek $LASTEXITCODE).
+$ErrorActionPreference = "Continue"
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 $root = Split-Path -Parent $PSScriptRoot
 $k8s = Join-Path $root "k8s"
