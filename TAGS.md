@@ -107,3 +107,11 @@ Perhatian: Agent mengumpulkan **semua** nilai untuk satu key dari setiap sumber,
 - [ ] `version` sama dengan tag image dan sudah dinaikkan.
 - [ ] Tidak ada spasi, huruf besar, atau sumber tak terbatas di nilai tag.
 - [ ] Tidak ada tag yang sama dengan nilai berbeda di sumber lain.
+
+## 9. Konvensi build dan manifest
+
+Aturan di luar tag yang berlaku untuk semua perubahan di repo ini.
+
+- **Nama image lokal:** `localhost/<nama>:<versi>`. Naikkan tag (misalnya `1.0` ke `1.1`) setiap build ulang, lalu perbarui `image` dan label `tags.datadoghq.com/version` di manifest. Image dengan tag yang sama bisa tidak tertimpa di minikube.
+- **Tracer:** SSI yang menyuntiknya. Dockerfile tidak berisi tracer atau variabel tracer manual.
+- **Secret:** dibuat lewat `kubectl` atau script setup, tidak pernah ditulis di file YAML, chat, atau log.

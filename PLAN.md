@@ -197,6 +197,20 @@ Dokumen `TAGS.md` di root menjadi aturan untuk semua entity Datadog. Referensi: 
 
 Temuan: label Kubernetes biasa (misalnya `team: bongcoy`) tidak otomatis menjadi tag Datadog. Hanya label `tags.datadoghq.com/*` yang dibaca Admission Controller, jadi `team` harus lewat `global.tags` di `DatadogAgent`.
 
+### Fase 13: README untuk pengunjung repo
+Keputusan: `README.md` hanya untuk pengunjung atau pengguna repo, bukan untuk pemilik. Bahasa Indonesia, langkah manual tetap di README (dilipat), lisensi MIT, konvensi build digabung ke `TAGS.md` (tanpa `CONTRIBUTING.md`).
+
+- [x] 13.1 Tulis ulang `README.md`: nilai proyek, diagram di atas, prasyarat, mulai cepat, coba aplikasi (Swagger dan contoh `curl`/`Invoke-RestMethod`), cek di Datadog, bersih-bersih, troubleshooting, detail teknis dilipat (`<details>`), berkontribusi, lisensi
+- [x] 13.2 Hapus dari README: tautan `PLAN.md` dan `AGENTS.md`, langkah pemilik image (login GHCR, ubah visibilitas), istilah "Fase 7" dan `dogsworld-java`, bagian Konvensi, dan catatan Node 20 untuk Archify
+- [x] 13.3 Pindahkan langkah pemilik image ke komentar di `scripts/build-push.ps1`. Catatan Node 20 Archify sudah ada di `AGENTS.md`
+- [x] 13.4 `TAGS.md` bagian 9: konvensi build dan manifest (tag image, tracer, Secret)
+- [x] 13.5 Tambah `LICENSE` (MIT, 2026, bongcoy)
+- [x] 13.6 `AGENTS.md`: deskripsi README dan `LICENSE` di struktur file
+- [ ] 13.7 Pengguna meninjau README di GitHub (SVG tampil, tautan relatif berfungsi)
+- [ ] 13.8 Pengguna menjalankan `Invoke-RestMethod`/`curl` contoh POST di README dan memastikan hasilnya 201
+
+Catatan: README menyebut bahwa script macOS/Linux belum diuji penuh di Mac Apple Silicon (sesuai item 11.6), dan bahwa langkah manual tidak membuat user DBM sehingga check `postgres` di Agent gagal sampai langkah itu dilakukan (APM tetap jalan). Kalau item 11.6 selesai, perbarui kalimat status pengujian di README.
+
 ## 8. Perubahan yang dilakukan di komputer
 
 - Memasang Helm dan minikube (winget).

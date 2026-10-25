@@ -1,6 +1,8 @@
 # Build image multi-arch (linux/amd64 dan linux/arm64) lalu push ke GHCR.
 # Login dulu sendiri (token tidak dimasukkan ke script ini):
-#   podman login ghcr.io -u bongcoy
+#   podman login ghcr.io -u bongcoy   (Personal Access Token dengan scope write:packages)
+# Package GHCR yang baru dibuat bersifat private. Ubah ke Public sekali di GitHub
+# (Packages, Package settings, Change visibility) supaya orang lain bisa menarik image tanpa login.
 # Pemakaian:
 #   .\scripts\build-push.ps1 -Version 1.2
 #   .\scripts\build-push.ps1 -Version 1.2 -Apps dogsworld-js

@@ -76,7 +76,8 @@ Cluster hanya punya 1 node: `minikube`, yang juga control plane.
 ### Struktur file
 ```
 DogsWorld/
-├── README.md                         (pengantar, struktur repo, cara menjalankan dari nol)
+├── README.md                         (untuk pengunjung repo: apa ini, mulai cepat, coba, bersih-bersih, troubleshooting. Tanpa catatan pemilik)
+├── LICENSE                           (MIT)
 ├── AGENTS.md                         (file ini)
 ├── PLAN.md                           (rencana dan checklist, sumber kebenaran progress)
 ├── TAGS.md                           (konvensi tag Datadog, wajib diikuti untuk entity Datadog)
