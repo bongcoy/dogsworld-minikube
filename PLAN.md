@@ -148,7 +148,7 @@ Alasan: SQL Server 2019 dan `mssql-tools` hanya punya image amd64, jadi tidak ja
 - [x] 9.1 Cek dukungan arm64: SSI mendukung x86_64 dan arm64 (dokumentasi Datadog), integrasi `Npgsql` 4.0+ didukung tracer .NET, `Npgsql.EntityFrameworkCore.PostgreSQL` 3.1.18 tersedia. .NET 3.1 tidak perlu di-upgrade
 - [x] 9.2 Ekspor 9 baris dari SQL Server (Id 1 sampai 9, nilai identity terakhir 12)
 - [x] 9.3 Buat `k8s/postgres.yaml` (ConfigMap `init.sql` berisi skema dan seed, PVC, Deployment `postgres:16`, Service `postgres`, label `admission.datadoghq.com/enabled: "false"`)
-- [ ] 9.4 Pengguna membuat Secret `postgres-secret` (key `password`) sendiri
+- [x] 9.4 Pengguna membuat Secret `postgres-secret` (key `password`) sendiri
 - [x] 9.5 App .NET: `UseNpgsql`, paket `Npgsql.EntityFrameworkCore.PostgreSQL` 3.1.18, hapus paket SqlServer/Sqlite dan folder `Migrations/`
 - [x] 9.6 App JS: `mssql` diganti `pg`, query memakai `$n` dan `RETURNING`
 - [x] 9.7 Dockerfile multi-arch tanpa emulasi (tahap build memakai `--platform=$BUILDPLATFORM`), image `1.2` (build lokal amd64 berhasil; build arm64 diuji di Fase 11)
@@ -180,10 +180,10 @@ Catatan implementasi (22 Okt):
 Registry: `ghcr.io/bongcoy`, package **public** (tim tidak butuh token untuk pull). Datadog dibuat fleksibel: site, API key, `env`, dan `clusterName` ditentukan per orang oleh script setup, jadi tim bisa memakai satu org yang sama atau org berbeda.
 
 - [x] 11.1 Manifest menunjuk ke `ghcr.io/bongcoy/dogsworld-<bahasa>:1.2` (cluster lokal ini masih memakai image `localhost/...:1.2` yang sudah ada di minikube, jangan `kubectl apply` manifest app sebelum image di-push)
-- [~] 11.2 `scripts/build-push.ps1`: build multi-arch (amd64 dan arm64) lalu push. Build multi-arch kedua app sudah teruji (manifest berisi amd64 dan arm64). Push belum, menunggu pengguna login GHCR dan menjalankan script
+- [x] 11.2 `scripts/build-push.ps1`: build multi-arch (amd64 dan arm64) lalu push. Build multi-arch kedua app sudah teruji (manifest berisi amd64 dan arm64). Push belum, menunggu pengguna login GHCR dan menjalankan script
 - [x] 11.3 `scripts/setup.ps1` dan `scripts/setup.sh` (plus `scripts/dbm-setup.sh` untuk user DBM): cluster, Operator (versi dikunci 2.30.0), Datadog (site, key, env, clusterName), Postgres, app. Bisa dijalankan ulang. Opsi `-NoDatadog`, `-SkipCluster`, `-LocalImages`. Sintaks teruji (parser PowerShell, `bash -n`) dan `kubectl apply --dry-run`. Belum dijalankan penuh di cluster baru
 - [x] 11.4 README bagian "Untuk tim"
-- [ ] 11.5 Pengguna mengatur package GHCR menjadi public
+- [x] 11.5 Pengguna mengatur package GHCR menjadi public
 - [ ] 11.6 Uji di Mac Apple Silicon oleh rekan tim (tidak bisa diuji dari laptop Windows ini)
 
 ### Fase 12: Konvensi tag Datadog
@@ -206,8 +206,8 @@ Keputusan: `README.md` hanya untuk pengunjung atau pengguna repo, bukan untuk pe
 - [x] 13.4 `TAGS.md` bagian 9: konvensi build dan manifest (tag image, tracer, Secret)
 - [x] 13.5 Tambah `LICENSE` (MIT, 2026, bongcoy)
 - [x] 13.6 `AGENTS.md`: deskripsi README dan `LICENSE` di struktur file
-- [ ] 13.7 Pengguna meninjau README di GitHub (SVG tampil, tautan relatif berfungsi)
-- [ ] 13.8 Pengguna menjalankan `Invoke-RestMethod`/`curl` contoh POST di README dan memastikan hasilnya 201
+- [x] 13.7 Pengguna meninjau README di GitHub (SVG tampil, tautan relatif berfungsi)
+- [x] 13.8 Pengguna menjalankan `Invoke-RestMethod`/`curl` contoh POST di README dan memastikan hasilnya 201
 
 Catatan: README menyebut bahwa script macOS/Linux belum diuji penuh di Mac Apple Silicon (sesuai item 11.6), dan bahwa langkah manual tidak membuat user DBM sehingga check `postgres` di Agent gagal sampai langkah itu dilakukan (APM tetap jalan). Kalau item 11.6 selesai, perbarui kalimat status pengujian di README.
 
