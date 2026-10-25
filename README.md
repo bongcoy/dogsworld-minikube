@@ -4,7 +4,7 @@ Contoh lengkap aplikasi CRUD di Kubernetes (minikube) yang dipantau **Datadog AP
 
 ![Arsitektur DogsWorld di Kubernetes dengan Datadog SSI: aplikasi .NET dan Node, PostgreSQL, serta Datadog Agent dan Cluster Agent](.archify/dogsworld-di-kubernetes-dengan-datadog-ssi-light.svg)
 
-## Yang kamu dapat
+## What you get
 
 - Dua aplikasi dengan API yang sama: **.NET Core 3.1** (ASP.NET dan EF Core) dan **Node 20** (Express dan `pg`).
 - **PostgreSQL 16** yang dipakai bersama oleh kedua aplikasi, sudah berisi 9 data contoh.
@@ -14,7 +14,7 @@ Contoh lengkap aplikasi CRUD di Kubernetes (minikube) yang dipantau **Datadog AP
 
 Datadog bersifat opsional. Tanpa akun Datadog, jalankan script dengan `-NoDatadog` (PowerShell) atau `--no-datadog` (bash), dan aplikasi tetap berjalan.
 
-## Prasyarat
+## Prerequisites
 
 | Kebutuhan | Keterangan |
 |---|---|
@@ -34,7 +34,7 @@ Di PowerShell yang baru dibuka, PATH kadang belum diperbarui. Jalankan ini dulu:
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 ```
 
-## Mulai cepat
+## Quick start
 
 ```bash
 git clone https://github.com/bongcoy/dogsworld-minikube.git
@@ -81,7 +81,7 @@ Opsi lain (sama di kedua script):
 
 Script aman dijalankan ulang. Secret yang sudah ada (`datadog-secret`, `postgres-secret`, `datadog-pg-secret`) tidak ditimpa. Password database dibuat acak dan hanya ada di Secret.
 
-## Coba aplikasinya
+## Try the apps
 
 Jalankan dua perintah ini di terminal terpisah. Port-forward berhenti kalau terminal ditutup, pod dibuat ulang, atau minikube dihentikan.
 
@@ -112,7 +112,7 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8081/api/dogs -ContentType 
 
 Kedua aplikasi memakai **database yang sama**. Data yang dihapus lewat satu aplikasi juga hilang di aplikasi lain. Itu disengaja supaya kamu bisa melihat satu data dari dua service.
 
-## Lihat hasilnya di Datadog
+## Monitoring results in Datadog
 
 Panggil `/api/dogs` beberapa kali, tunggu satu atau dua menit, lalu buka Datadog:
 
@@ -121,7 +121,7 @@ Panggil `/api/dogs` beberapa kali, tunggu satu atau dua menit, lalu buka Datadog
 
 Semua data dari Agent juga membawa tag `team:bongcoy`. Ubah nilainya di `spec.global.tags` pada `k8s/datadog-agent.yaml` jika kamu ingin nama timmu sendiri (aturan tag ada di [`TAGS.md`](TAGS.md)).
 
-### Alur satu request
+### One request flow
 
 ![Satu request GET /api/dogs dari klien ke aplikasi, PostgreSQL, dan trace-nya ke Datadog](.archify/satu-request-get-api-dogs-dan-trace-nya-light.svg)
 
@@ -129,7 +129,7 @@ Versi interaktif ada di dua file HTML. GitHub tidak menampilkannya langsung, jad
 - [`dogsworld-architecture.html`](.archify/architecture-dogsworld-20261021-231326/dogsworld-architecture.html): arsitektur.
 - [`dogsworld-request-sequence.html`](.archify/sequence-dogsworld-request-20261021-231326/dogsworld-request-sequence.html): alur satu request.
 
-## Membersihkan
+## Clean up
 
 Hentikan cluster untuk membebaskan RAM (data tetap ada):
 
@@ -152,7 +152,7 @@ helm uninstall datadog-operator -n datadog
 kubectl delete namespace datadog
 ```
 
-## Mengatasi masalah
+## Solve common problems
 
 | Gejala | Penyebab dan solusi |
 |---|---|
@@ -173,7 +173,7 @@ kubectl get pods -n datadog
 
 Semua pod yang sehat berstatus `Running`.
 
-## Detail teknis
+## Technical details
 
 <details>
 <summary>Struktur repo</summary>
@@ -296,10 +296,10 @@ Kalau tracer SSI tidak muncul di pod, jalankan `kubectl rollout restart deployme
 
 </details>
 
-## Berkontribusi
+## Contribute
 
 Kontribusi lewat issue dan pull request diterima. Sebelum mengubah manifest, Dockerfile, atau entity Datadog (Deployment, monitor, dashboard, dan sejenisnya), baca [`TAGS.md`](TAGS.md). Dokumen itu memuat konvensi tag dan konvensi build yang berlaku di repo ini.
 
-## Lisensi
+## License
 
 [MIT](LICENSE)
