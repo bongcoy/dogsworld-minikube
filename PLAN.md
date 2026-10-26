@@ -211,6 +211,23 @@ Keputusan: `README.md` hanya untuk pengunjung atau pengguna repo, bukan untuk pe
 
 Catatan: README menyebut bahwa script macOS/Linux belum diuji penuh di Mac Apple Silicon (sesuai item 11.6), dan bahwa langkah manual tidak membuat user DBM sehingga check `postgres` di Agent gagal sampai langkah itu dilakukan (APM tetap jalan). Kalau item 11.6 selesai, perbarui kalimat status pengujian di README.
 
+### Fase 14: Deploy ke Amazon EKS (cluster `bongcoy-cluster`, ap-southeast-2, Auto Mode)
+Keputusan (26 Okt): Kustomize (`k8s/base` + `k8s/overlays/{minikube,eks}`), ECR Private di ap-southeast-2, Operator lewat Helm 2.30.0 di namespace `datadog` (bukan add-on EKS), Postgres tetap sebagai pod dengan EBS, `clusterName` `dogsworld-eks`, `env:staging`. `TAGS.md` perlu diperbarui karena `env` kini tidak selalu `dev`. Di akhir ada langkah bersih-bersih (biaya node dan EBS).
+
+- [x] 14.1 Hapus add-on EKS `datadog_operator` (status DEGRADED sejak awal). Add-on terhapus, CRD dan pod ikut hilang. Add-on `metrics-server` tidak disentuh
+- [x] 14.2 Perbaiki masalah IP pod. Pengguna menghapus blok `Condition` (`aws:SourceAccount`) dari trust policy role `AmazonEKSRoleManager-ap-southeast-2-AutoCluster` (CloudTrail: `UpdateAssumeRolePolicy` 26 Okt 02:28:51 UTC). Hasil: `CNINode` ketiga node `Ready` dalam sekitar 5 menit, pod Operator dan `metrics-server` `Running`
+- [x] 14.3 Namespace `datadog-agent` yang tersangkut `Terminating` hilang sendiri setelah `metrics-server` pulih
+- [ ] 14.4 Restrukturisasi `k8s/` menjadi `base/` dan `overlays/{minikube,eks}`. Hasil render overlay minikube harus sama dengan manifest sekarang
+- [ ] 14.5 StorageClass EKS (`ebs.csi.eks.amazonaws.com`, gp3) dan PVC Postgres lewat overlay EKS
+- [ ] 14.6 Buat repo ECR Private `dogsworld-dotnet` dan `dogsworld-js`
+- [ ] 14.7 Script build dan push ke ECR (multi-arch, node EKS campuran amd64 dan arm64)
+- [x] 14.8 `helm install datadog-operator` 2.30.0 di namespace `datadog`, pengguna membuat Secret `datadog-secret` (key `api-key`) sendiri. Lalu `kubectl apply -f k8s/datadog-agent-eks.yaml` (`DatadogAgent` minimal: `clusterName: dogsworld-eks`, tag `env:staging` dan `team:bongcoy`, tanpa SSI dan DBM). Hasil: `datadog-agent` (3/3), `datadog-cluster-agent`, dan `datadog-operator` `Running`. `agent status`: API key valid, `cluster-name: dogsworld-eks`, check `kubelet` OK. Cek di UI Datadog (Infrastructure, Kubernetes) menunggu pengguna
+- [ ] 14.9 `kubectl apply -k k8s/overlays/eks`, uji CRUD, cek trace dan DBM di Datadog
+- [ ] 14.10 Perbarui `TAGS.md`, `AGENTS.md`, `README.md`, `setup.ps1`/`setup.sh`
+- [ ] 14.11 Langkah bersih-bersih EKS (hapus workload, PVC/EBS, repo ECR, dan cluster atau node jika tidak dipakai)
+
+Temuan (26 Okt): pod di `bongcoy-cluster` tidak pernah bisa mendapat IP, termasuk pod uji `busybox` di node baru, jadi bukan salah add-on. Event node: `IPAllocationFailed ... AssignPrivateIpAddresses ... AssumeRole 403 AccessDenied: assumed-role/EKSNetworkingChainRole/eks-auto-mode-ipam-... is not authorized to perform: sts:TagSession on resource: ...role/service-role/AmazonEKSRoleManager-ap-southeast-2-AutoCluster`. Akibatnya `CNINode` tertahan di `AwaitingReconciliation`, node hanya punya ENI utama, `metrics-server` ikut gagal (APIService `v1beta1.metrics.k8s.io` MissingEndpoints), dan penghapusan namespace tersangkut karena discovery metrics API stale. Role cluster itu punya 5 policy Auto Mode yang benar. Trust policy-nya: principal `eks.amazonaws.com`, action `sts:AssumeRole` + `sts:TagSession`, dengan kondisi `aws:SourceAccount=896986967332`. Dugaan (belum dibuktikan): kondisi `aws:SourceAccount` memblokir pemanggil `EKSNetworkingChainRole` yang berasal dari akun AWS lain. Perbaikan yang diusulkan: hapus kondisi itu dari trust policy (sama dengan role yang dibuat konsol), tunggu node mendapat IP, uji ulang dengan pod uji.
+
 ## 8. Perubahan yang dilakukan di komputer
 
 - Memasang Helm dan minikube (winget).
