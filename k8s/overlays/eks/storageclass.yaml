@@ -1,0 +1,12 @@
+# EKS Auto Mode tidak membuat StorageClass sendiri. gp2 bawaan memakai provisioner lama (kubernetes.io/aws-ebs).
+# Bukan default, supaya tidak mengubah perilaku PVC lain di cluster. PVC Postgres menunjuk ke sini lewat kustomization.yaml.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: dogsworld-gp3
+provisioner: ebs.csi.eks.amazonaws.com
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+parameters:
+  type: gp3
+  encrypted: "true"

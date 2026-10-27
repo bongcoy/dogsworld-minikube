@@ -35,7 +35,8 @@ while [ $# -gt 0 ]; do
 done
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-K8S="$ROOT/k8s"
+K8S="$ROOT/k8s/base"
+K8S_MINIKUBE="$ROOT/k8s/overlays/minikube"
 
 step() { printf '\n== %s\n' "$1"; }
 secret_exists() { kubectl get secret "$2" -n "$1" >/dev/null 2>&1; }
@@ -123,7 +124,7 @@ if [ "$NO_DATADOG" -eq 0 ]; then
   sed -e "s|clusterName: .*|clusterName: ${CLUSTER_NAME}|" \
       -e "s|site: .*|site: ${SITE}|" \
       -e "s|\"env:dev\"|\"env:${ENV_TAG}\"|" \
-      "$K8S/datadog-agent.yaml" | kubectl apply -f -
+      "$K8S_MINIKUBE/datadog-agent.yaml" | kubectl apply -f -
   kubectl apply -f "$K8S/datadog-dbm-rbac.yaml"
 fi
 

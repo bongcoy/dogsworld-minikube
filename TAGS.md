@@ -42,7 +42,7 @@ Setiap workload aplikasi memakai **Unified Service Tagging**: tiga tag `env`, `s
 
 | Tag | Nilai | Aturan |
 |---|---|---|
-| `env` | `dev` | Sama untuk semua aplikasi di cluster ini. |
+| `env` | `dev` (minikube), `staging` (EKS) | Sama untuk semua aplikasi di satu cluster. Overlay Kustomize mengisinya per lingkungan. |
 | `service` | `dogsworld-<bahasa>` | Sama dengan nama aplikasi (lihat AGENTS.md, bagian Konvensi). |
 | `version` | Tag image, misalnya `1.2` | Harus sama dengan tag di `image`. Naikkan setiap build ulang. |
 | `team` | `bongcoy` | Pemilik resource. |
@@ -76,7 +76,7 @@ Database dan komponen infrastruktur lain (misalnya `postgres`) tidak disuntik tr
 
 | Tag | Nilai |
 |---|---|
-| `env` | `dev` |
+| `env` | `dev` (minikube), `staging` (EKS) |
 | `service` | Nama komponen, misalnya `postgres` |
 | `team` | `bongcoy` |
 
@@ -84,10 +84,10 @@ Tag `env` dan `service` ditulis sebagai label `tags.datadoghq.com/*` seperti apl
 
 ## 6. Tag level cluster (`DatadogAgent`)
 
-Tag cluster ditulis di `k8s/datadog-agent.yaml`:
+Tag cluster ditulis di `k8s/overlays/<lingkungan>/datadog-agent.yaml`:
 
-- `spec.global.clusterName`: nama cluster, saat ini `dogsworld-minikube`.
-- `spec.global.tags`: daftar tag yang ditambahkan ke semua data dari Agent, misalnya `"env:dev"`, `"team:bongcoy"`. Di sinilah `team` ditulis.
+- `spec.global.clusterName`: nama cluster, `dogsworld-minikube` (overlay minikube) atau `dogsworld-eks` (overlay EKS).
+- `spec.global.tags`: daftar tag yang ditambahkan ke semua data dari Agent, misalnya `"env:dev"` (minikube) atau `"env:staging"` (EKS), dan `"team:bongcoy"`. Di sinilah `team` ditulis.
 
 Perhatian: Agent mengumpulkan **semua** nilai untuk satu key dari setiap sumber, tanpa urutan prioritas. Jika `service` diisi di tempat lain dengan nilai berbeda, data akan memuat dua nilai. Jadi jangan mengisi `env` atau `service` dengan nilai berbeda di sumber lain.
 
@@ -112,6 +112,6 @@ Perhatian: Agent mengumpulkan **semua** nilai untuk satu key dari setiap sumber,
 
 Aturan di luar tag yang berlaku untuk semua perubahan di repo ini.
 
-- **Nama image lokal:** `localhost/<nama>:<versi>`. Naikkan tag (misalnya `1.0` ke `1.1`) setiap build ulang, lalu perbarui `image` dan label `tags.datadoghq.com/version` di manifest. Image dengan tag yang sama bisa tidak tertimpa di minikube.
+- **Nama image:** lokal `localhost/<nama>:<versi>`, EKS `<akun>.dkr.ecr.<region>.amazonaws.com/<nama>:<versi>` (diganti oleh overlay EKS lewat `images`). Naikkan tag (misalnya `1.0` ke `1.1`) setiap build ulang, lalu perbarui `image` dan label `tags.datadoghq.com/version` di manifest. Image dengan tag yang sama bisa tidak tertimpa di minikube.
 - **Tracer:** SSI yang menyuntiknya. Dockerfile tidak berisi tracer atau variabel tracer manual.
 - **Secret:** dibuat lewat `kubectl` atau script setup, tidak pernah ditulis di file YAML, chat, atau log.

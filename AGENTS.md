@@ -9,7 +9,7 @@ Panduan untuk agent yang bekerja di repo ini. Baca file ini dulu, lalu baca `PLA
 **Yang sudah dibangun:**
 - Aplikasi **DogsWorld** (.NET Core 3.1, ASP.NET + EF Core + Npgsql) di `apps/dogsworld-dotnet/`. Berjalan di cluster minikube dan di-instrument Datadog APM dengan **Single Step Instrumentation (SSI)** lewat **Datadog Operator**.
 - Aplikasi **dogsworld-js** (Express + `pg`) di `apps/dogsworld-js/`. CRUD-nya sama dengan .NET dan memakai database yang sama. Sudah ter-instrument SSI.
-- Database: **PostgreSQL 16** (`postgres:16`) di `k8s/postgres.yaml`. Migrasi dari SQL Server selesai (Fase 9). SQL Server dihapus.
+- Database: **PostgreSQL 16** (`postgres:16`) di `k8s/base/postgres.yaml`. Migrasi dari SQL Server selesai (Fase 9). SQL Server dihapus.
 - Rencana untuk aplikasi **dogsworld-java** (Javalin + driver JDBC PostgreSQL) di namespace `dogsworld-java-test`. Belum dibuat (Fase 7).
 - Diagram arsitektur dan sequence dibuat dengan skill Archify (lolos validate, deliver, check, dan browser-check) di `.archify/`.
 
@@ -30,6 +30,8 @@ Panduan untuk agent yang bekerja di repo ini. Baca file ini dulu, lalu baca `PLA
 | `datadog` | `datadog-operator-*` | `datadog-operator` | |
 
 Cluster hanya punya 1 node: `minikube`, yang juga control plane.
+
+**Lingkungan kedua: Amazon EKS** (Fase 14). Cluster `bongcoy-cluster` (ap-southeast-2, EKS Auto Mode, akun `896986967332`), `clusterName` Datadog `dogsworld-eks`, `env:staging`. Namespace dan pod sama seperti tabel di atas. Image dari ECR Private (`896986967332.dkr.ecr.ap-southeast-2.amazonaws.com/dogsworld-dotnet` dan `dogsworld-js`, tag `1.2` multi-arch karena node campuran amd64 dan arm64). Operator lewat Helm (bukan add-on EKS). PVC Postgres memakai StorageClass `dogsworld-gp3` (`ebs.csi.eks.amazonaws.com`). Semua berjalan di AWS dan ditagih selama menyala; akses hanya lewat `kubectl port-forward`. Gunakan `kubectl config current-context` untuk tahu cluster mana yang sedang dikendalikan.
 
 **Konsep yang sudah dijelaskan ke pengguna:**
 - Pod, Deployment, dan kapan pod baru dibuat. Container dalam satu pod berbagi jaringan dan volume (pola sidecar). Pisahkan jadi pod berbeda jika komponen bisa di-scale atau di-update sendiri.
@@ -57,6 +59,11 @@ Cluster hanya punya 1 node: `minikube`, yang juga control plane.
 - **Setiap pembuatan atau perubahan entity yang berkaitan dengan Datadog wajib diberi tag sesuai `TAGS.md`** sebelum dianggap selesai. Entity itu mencakup Deployment, Job, dan Pod; `DatadogAgent`; monitor, dashboard, dan SLO; metrik kustom; serta konfigurasi tracer. Baca `TAGS.md` sebelum membuat entity seperti itu.
 
 ### Gotcha yang sudah ditemukan
+- **EKS Auto Mode: pod tanpa IP (`IPAllocationFailed`, `FailedCreatePodSandBox`).** Penyebabnya blok `Condition` (`aws:SourceAccount`) di trust policy role `AmazonEKSRoleManager-ap-southeast-2-AutoCluster`, yang menolak `sts:TagSession` dari layanan jaringan Auto Mode. Setelah dihapus pengguna, `CNINode` jadi `Ready` dalam sekitar 5 menit. Jangan ubah IAM role tanpa izin eksplisit.
+- **EKS Auto Mode tidak membuat StorageClass.** `gp2` bawaan memakai provisioner lama. Pakai `dogsworld-gp3` dari overlay EKS.
+- **Node `system` EKS punya taint `CriticalAddonsOnly`**, jadi DaemonSet Agent hanya berjalan di node `general-purpose`. Keputusan: dilewati.
+- **`kubectl apply -k` di cluster baru** gagal untuk objek di namespace `dogsworld` sampai namespace dibuat. Apply `k8s/base/namespace.yaml` dulu.
+- **Python di host Windows ini tidak bisa membaca `/tmp` milik git-bash.** Pakai `C:/Users/MuhammadPascalDewant/AppData/Local/Temp/opencode`. Dalam skrip Python, `"\b"` di string biasa menjadi karakter backspace; pakai `edit` untuk path Windows.
 - **Suntikan SSI hanya terjadi saat pod dibuat.** Setelah mengubah `targets` atau `ddTraceVersions`, jalankan `kubectl rollout restart deployment <nama> -n <namespace>`.
 - **Adaptive Sampling dari Datadog bisa membuang hampir semua trace.** Aturan dikirim lewat Remote Configuration (di log tracer bertanda `provenance: dynamic`) dan pernah menjadi 1%, sehingga Live Tail kosong. Gejalanya: `agent status` menunjukkan "Traces received" besar tetapi Writer "Traces" kecil. Deployment kini memakai `DD_TRACE_SAMPLING_RULES='[{"sample_rate":1}]'`, tetapi aturan dynamic tetap bisa menggantikannya, jadi solusi permanen adalah mematikan Adaptive Sampling di UI. Cek aturan aktif lewat `"sampling_rules"` di `/var/log/datadog/dotnet/dotnet-tracer-managed-dotnet-1.log`. Pengaturan UI ada di APM, Setup & Configuration, Ingestion Control.
 - **Pod yang dibuat saat Cluster Agent sedang diganti bisa tidak mendapat tracer yang diharapkan.** Solusinya: rollout restart.
@@ -100,20 +107,24 @@ DogsWorld/
 ├── scripts/
 │   ├── setup.ps1, setup.sh           (setup penuh untuk tim: cluster, Operator, Agent, Postgres, app)
 │   ├── dbm-setup.sh                  (dijalankan di dalam pod postgres: user datadog untuk DBM)
-│   └── build-push.ps1                (build multi-arch dan push ke ghcr.io/bongcoy)
-├── k8s/
-│   ├── datadog-dbm-rbac.yaml         (Role/RoleBinding: Agent boleh baca Secret datadog-pg-secret)
-│   ├── datadog-agent.yaml            (DatadogAgent, SSI, check postgres DBM, targets namespace dogsworld)
-│   ├── dogsworld-dotnet.yaml         (Deployment + Service .NET, label UST)
-│   ├── dogsworld-js.yaml             (Deployment + Service JS, label UST)
-│   └── postgres.yaml                 (ConfigMap initdb, PVC, Deployment, Service PostgreSQL)
+│   └── build-push.ps1                (build multi-arch dan push ke ghcr.io/bongcoy, atau ke ECR jika -Registry host ECR)
+├── k8s/                              (Kustomize: base + overlay per lingkungan)
+│   ├── base/
+│   │   ├── kustomization.yaml, namespace.yaml
+│   │   ├── datadog-dbm-rbac.yaml     (Role/RoleBinding: Agent boleh baca Secret datadog-pg-secret)
+│   │   ├── dogsworld-dotnet.yaml     (Deployment + Service .NET, label UST env dev)
+│   │   ├── dogsworld-js.yaml         (Deployment + Service JS, label UST env dev)
+│   │   └── postgres.yaml             (ConfigMap initdb, PVC, Deployment, Service PostgreSQL)
+│   └── overlays/
+│       ├── minikube/                 (kustomization.yaml + datadog-agent.yaml, image GHCR, env dev)
+│       └── eks/                      (kustomization.yaml: image ECR, env staging, PVC gp3; storageclass.yaml; datadog-agent.yaml)
 └── .archify/
     ├── architecture-dogsworld-20261021-231326/   (Diagram 1: candidate.json + dogsworld-architecture.html)
     └── sequence-dogsworld-request-20261021-231326/ (Diagram 2: candidate.json + dogsworld-request-sequence.html)
 ```
 
 ### Konvensi
-- **Satu nama per aplikasi:** `dogsworld-<bahasa>` (`dogsworld-dotnet`, `dogsworld-js`, `dogsworld-java`) dipakai untuk folder `apps/`, image, Deployment, Service, container, label `app`, file manifest `k8s/`, dan service Datadog (`tags.datadoghq.com/service`). Nama service Datadog .NET dulu `dogsworld-app`.
+- **Satu nama per aplikasi:** `dogsworld-<bahasa>` (`dogsworld-dotnet`, `dogsworld-js`, `dogsworld-java`) dipakai untuk folder `apps/`, image, Deployment, Service, container, label `app`, file manifest `k8s/base/`, dan service Datadog (`tags.datadoghq.com/service`). Nama service Datadog .NET dulu `dogsworld-app`.
 - **Nama image lokal:** `localhost/<nama>:<versi>`, lalu `minikube image load`.
 - **Label UST di setiap Deployment:** `tags.datadoghq.com/env`, `tags.datadoghq.com/service`, `tags.datadoghq.com/version`, di metadata dan pod template. `service` harus sama dengan nama aplikasi. Aturan lengkap, termasuk `team`, ada di `TAGS.md`.
 - **Koneksi database:** host `postgres` untuk namespace `dogsworld`, port 5432, database `dogs`, user `dogsworld`. Password dari Secret `postgres-secret` (key `password`), tidak pernah ditulis di YAML.

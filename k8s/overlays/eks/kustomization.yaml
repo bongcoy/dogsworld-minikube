@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - storageclass.yaml
+  - datadog-agent.yaml
+
+images:
+  - name: ghcr.io/bongcoy/dogsworld-dotnet
+    newName: 896986967332.dkr.ecr.ap-southeast-2.amazonaws.com/dogsworld-dotnet
+  - name: ghcr.io/bongcoy/dogsworld-js
+    newName: 896986967332.dkr.ecr.ap-southeast-2.amazonaws.com/dogsworld-js
+
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /metadata/labels/tags.datadoghq.com~1env
+        value: staging
+      - op: replace
+        path: /spec/template/metadata/labels/tags.datadoghq.com~1env
+        value: staging
+  - target:
+      kind: PersistentVolumeClaim
+      name: postgres-data
+    patch: |-
+      - op: add
+        path: /spec/storageClassName
+        value: dogsworld-gp3

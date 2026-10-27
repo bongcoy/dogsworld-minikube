@@ -27,7 +27,8 @@ param(
 $ErrorActionPreference = "Continue"
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 $root = Split-Path -Parent $PSScriptRoot
-$k8s = Join-Path $root "k8s"
+$k8s = Join-Path $root "k8s\base"
+$k8sMinikube = Join-Path $root "k8s\overlays\minikube"
 
 function Step($msg) { Write-Host ""; Write-Host "== $msg" -ForegroundColor Cyan }
 function Run($label) { if ($LASTEXITCODE -ne 0) { throw "Gagal: $label" } }
@@ -113,7 +114,7 @@ if (-not $NoDatadog) {
 # --- 5. Datadog Agent ---
 if (-not $NoDatadog) {
     Step "DatadogAgent (site $Site, cluster $ClusterName, env $Env)"
-    $agent = Get-Content (Join-Path $k8s "datadog-agent.yaml") -Raw
+    $agent = Get-Content (Join-Path $k8sMinikube "datadog-agent.yaml") -Raw
     $agent = $agent -replace 'clusterName: .+', "clusterName: $ClusterName"
     $agent = $agent -replace 'site: .+', "site: $Site"
     $agent = $agent -replace '"env:dev"', "`"env:$Env`""

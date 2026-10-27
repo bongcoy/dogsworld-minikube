@@ -119,7 +119,7 @@ Panggil `/api/dogs` beberapa kali, tunggu satu atau dua menit, lalu buka Datadog
 - **APM → Services**: `dogsworld-dotnet` dan `dogsworld-js`, dengan `env` yang kamu pilih saat setup. Trace Node berisi span database dari `pg`.
 - **Infrastructure → Kubernetes**: cluster dengan `clusterName` pilihanmu.
 
-Semua data dari Agent juga membawa tag `team:bongcoy`. Ubah nilainya di `spec.global.tags` pada `k8s/datadog-agent.yaml` jika kamu ingin nama timmu sendiri (aturan tag ada di [`TAGS.md`](TAGS.md)).
+Semua data dari Agent juga membawa tag `team:bongcoy`. Ubah nilainya di `spec.global.tags` pada `k8s/overlays/minikube/datadog-agent.yaml` jika kamu ingin nama timmu sendiri (aturan tag ada di [`TAGS.md`](TAGS.md)).
 
 ### One request flow
 
@@ -188,7 +188,9 @@ dogsworld-minikube/
 ├── apps/
 │   ├── dogsworld-dotnet/   .NET Core 3.1 (ASP.NET + EF Core)
 │   └── dogsworld-js/       Node 20 (Express + pg)
-├── k8s/                    manifest Kubernetes yang dipakai bersama
+├── k8s/
+│   ├── base/               manifest bersama (namespace, Postgres, aplikasi, RBAC DBM)
+│   └── overlays/           minikube/ dan eks/ (Kustomize: Datadog Agent, image, StorageClass)
 ├── scripts/                setup.ps1, setup.sh, dbm-setup.sh, build-push.ps1
 └── .archify/               diagram arsitektur dan sequence (HTML dan SVG)
 ```
@@ -209,7 +211,7 @@ Setiap aplikasi punya `Dockerfile` dan `.dockerignore` sendiri. Konteks build ad
 
 Service aplikasi membuka port 80 dan meneruskannya ke port kontainer 8080. Port 8080 dan 8081 di atas adalah port lokal untuk port-forward.
 
-SSI dikonfigurasi di `k8s/datadog-agent.yaml`: target memilih namespace `dogsworld`, dan `ddTraceVersions` memilih tracer `dotnet` dan `js`.
+SSI dikonfigurasi di `k8s/overlays/<lingkungan>/datadog-agent.yaml`: target memilih namespace `dogsworld`, dan `ddTraceVersions` memilih tracer `dotnet` dan `js`.
 
 </details>
 
@@ -233,7 +235,7 @@ Swagger UI ada di `/swagger/index.html` pada setiap aplikasi.
 <details>
 <summary>Langkah manual (tanpa script)</summary>
 
-Langkah ini sama dengan yang dikerjakan script, berguna kalau kamu ingin belajar tiap bagiannya. Manifest memakai nilai bawaan: site `ap1.datadoghq.com`, `env` `dev`, dan `clusterName` `dogsworld-minikube`. Ubah nilainya di `k8s/` sebelum `kubectl apply` kalau kamu memakai nilai lain.
+Langkah ini sama dengan yang dikerjakan script, berguna kalau kamu ingin belajar tiap bagiannya. Manifest memakai nilai bawaan: site `ap1.datadoghq.com`, `env` `dev`, dan `clusterName` `dogsworld-minikube`. Ubah nilainya di `k8s/base/` dan `k8s/overlays/minikube/` sebelum `kubectl apply` kalau kamu memakai nilai lain.
 
 **1. Cluster**
 
@@ -254,30 +256,30 @@ Buat Secret API key sendiri. Ganti `<API_KEY>` dengan key kamu, dan jangan menem
 
 ```powershell
 kubectl create secret generic datadog-secret -n datadog --from-literal api-key=<API_KEY>
-kubectl apply -f k8s/datadog-agent.yaml
+kubectl apply -f k8s/overlays/minikube/datadog-agent.yaml
 kubectl get pods -n datadog
 ```
 
-Catatan: manifest Agent juga mengaktifkan Database Monitoring untuk PostgreSQL. Langkahnya (user `datadog`, Secret `datadog-pg-secret`, `k8s/datadog-dbm-rbac.yaml`, dan `scripts/dbm-setup.sh`) hanya dikerjakan otomatis oleh script. Tanpa langkah itu, check `postgres` di Agent akan gagal, sedangkan APM seharusnya tetap berjalan.
+Catatan: manifest Agent juga mengaktifkan Database Monitoring untuk PostgreSQL. Langkahnya (user `datadog`, Secret `datadog-pg-secret`, `k8s/base/datadog-dbm-rbac.yaml`, dan `scripts/dbm-setup.sh`) hanya dikerjakan otomatis oleh script. Tanpa langkah itu, check `postgres` di Agent akan gagal, sedangkan APM seharusnya tetap berjalan.
 
 **3. Namespace, PostgreSQL, dan database**
 
 ```powershell
-kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/base/namespace.yaml
 kubectl create secret generic postgres-secret -n dogsworld --from-literal password=<PASSWORD_BARU>
-kubectl apply -f k8s/postgres.yaml
+kubectl apply -f k8s/base/postgres.yaml
 kubectl rollout status deployment/postgres -n dogsworld
 ```
 
-Ganti `<PASSWORD_BARU>` dengan password kuat pilihanmu. Password tidak ditulis di file YAML mana pun. `k8s/postgres.yaml` membuat user `dogsworld`, database `dogs`, tabel `"Dog"`, dan 9 baris contoh.
+Ganti `<PASSWORD_BARU>` dengan password kuat pilihanmu. Password tidak ditulis di file YAML mana pun. `k8s/base/postgres.yaml` membuat user `dogsworld`, database `dogs`, tabel `"Dog"`, dan 9 baris contoh.
 
 **4. Deploy aplikasi**
 
 Manifest menunjuk ke image di GHCR, jadi langkah ini cukup:
 
 ```powershell
-kubectl apply -f k8s/dogsworld-dotnet.yaml
-kubectl apply -f k8s/dogsworld-js.yaml
+kubectl apply -f k8s/base/dogsworld-dotnet.yaml
+kubectl apply -f k8s/base/dogsworld-js.yaml
 kubectl get pods -n dogsworld
 ```
 
@@ -288,11 +290,34 @@ podman build -t dogsworld-dotnet:1.2 apps/dogsworld-dotnet
 podman build -t dogsworld-js:1.2 apps/dogsworld-js
 minikube image load localhost/dogsworld-dotnet:1.2
 minikube image load localhost/dogsworld-js:1.2
-(Get-Content k8s/dogsworld-dotnet.yaml) -replace 'ghcr.io/bongcoy/','localhost/' | kubectl apply -f -
-(Get-Content k8s/dogsworld-js.yaml) -replace 'ghcr.io/bongcoy/','localhost/' | kubectl apply -f -
+(Get-Content k8s/base/dogsworld-dotnet.yaml) -replace 'ghcr.io/bongcoy/','localhost/' | kubectl apply -f -
+(Get-Content k8s/base/dogsworld-js.yaml) -replace 'ghcr.io/bongcoy/','localhost/' | kubectl apply -f -
 ```
 
 Kalau tracer SSI tidak muncul di pod, jalankan `kubectl rollout restart deployment <nama> -n dogsworld`. Lalu lanjut ke bagian "Coba aplikasinya".
+
+</details>
+
+<details>
+<summary>Deploy ke Amazon EKS (opsional)</summary>
+
+Overlay `k8s/overlays/eks` memakai Kustomize. Perbedaannya dari minikube: image dari ECR Private, `env` `staging`, `clusterName` `dogsworld-eks`, dan StorageClass `dogsworld-gp3` (EKS Auto Mode tidak membuat StorageClass sendiri, dan `gp2` bawaan memakai provisioner lama).
+
+Prasyarat: cluster EKS, Datadog Operator terpasang lewat Helm, Secret `datadog-secret` di namespace `datadog`, dan repo ECR `dogsworld-dotnet` dan `dogsworld-js` berisi image multi-arch (node EKS bisa amd64 atau arm64). Sesuaikan akun dan region ECR di `k8s/overlays/eks/kustomization.yaml`.
+
+```powershell
+# image ke ECR (login ECR dikerjakan script)
+.\scripts\build-push.ps1 -Version 1.2 -Registry <akun>.dkr.ecr.<region>.amazonaws.com
+
+kubectl apply -f k8s/base/namespace.yaml
+kubectl create secret generic postgres-secret -n dogsworld --from-literal password=<PASSWORD_BARU>
+kubectl create secret generic datadog-pg-secret -n dogsworld --from-literal password=<PASSWORD_DBM>
+kubectl apply -k k8s/overlays/eks
+```
+
+Lalu jalankan `scripts/dbm-setup.sh` di pod Postgres (lihat `scripts/setup.ps1` untuk caranya) dan `kubectl rollout restart deployment dogsworld-dotnet dogsworld-js -n dogsworld` agar tracer SSI disuntik. Aplikasi hanya bisa diakses lewat `kubectl port-forward`.
+
+Resource EKS ditagih selama menyala. Setelah selesai, hapus workload, PVC, repo ECR, dan node (lihat PLAN.md, item 14.11).
 
 </details>
 
