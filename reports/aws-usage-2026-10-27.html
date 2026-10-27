@@ -183,8 +183,8 @@ function kpis(){
     ['Jika cluster dihapus',usd(p5.oct,0),'Mulai 28 Okt, laju '+usd(p5.daily)+'/hari'],
   ];
   $('#kpis').innerHTML=items.map(([l,v,n])=>`<div class="kpi"><div class="l">${esc(l)}</div><div class="v">${esc(v)}</div><div class="n">${esc(n)}</div></div>`).join('');
-  $('#sub').textContent=`Akun utama …6332 dan 1 akun member …9602 · ap-southeast-2 · data Cost Explorer sampai ${D.dataThrough} · dibuat ${D.generated}`;
-  $('#foot').textContent=`Laporan hanya-baca. Tidak ada resource AWS yang diubah. Dibuat ${D.generated}.`;
+  $('#sub').textContent=`Akun utama …6332 dan 1 akun member …9602 · ap-southeast-2 · data Cost Explorer sampai ${D.dataThrough} · dibuat ${D.generated} jam 11.05 WIB`;
+  $('#foot').textContent=`Laporan hanya-baca. Tidak ada resource AWS yang diubah. Dibuat ${D.generated} jam 11.05 WIB.`;
 }
 
 /* ---------- chart ---------- */
